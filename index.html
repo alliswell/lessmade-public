@@ -53,6 +53,7 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 /* words over the pictures */
 .mark{position:fixed;z-index:8;left:0;right:0;top:calc(10px + env(safe-area-inset-top,0px));margin:0;text-align:center;color:var(--red);font:500 var(--size)/1.05 var(--serif);font-variation-settings:"SOFT" 100,"WONK" 0,"opsz" 96;letter-spacing:-.015em;white-space:nowrap;pointer-events:none;transition:opacity .3s}
 .mark .n{font-size:.32em;vertical-align:.95em;margin-left:.06em;letter-spacing:0;font-variant-numeric:tabular-nums}
+.mark .n{position:absolute;margin-top:.35em}
 .dock{position:fixed;z-index:11;left:0;right:0;bottom:0;height:100vh;height:100dvh;overflow-y:auto;overscroll-behavior:contain;color:var(--red);display:flex;flex-direction:column;gap:clamp(18px,3vh,36px);padding:calc(24px + env(safe-area-inset-top,0px)) 0 calc(64px + env(safe-area-inset-bottom,0px));transform:translateY(104%);visibility:hidden;transition:transform .45s cubic-bezier(.2,.9,.2,1),visibility 0s .45s}
 body.fopen .dock{transform:none;visibility:visible;transition:transform .45s cubic-bezier(.2,.9,.2,1),visibility 0s}
 .dock::before{content:"";flex:1 0 0;margin-bottom:calc(-1 * clamp(18px,3vh,36px))}.dock .row button{font-size:var(--dfs,min(21vh,30vw));line-height:.98;letter-spacing:-.035em}
@@ -104,7 +105,7 @@ body.orbit .field{visibility:hidden}body:not(.orbit) .orb{display:none}
 .orbinfo{position:fixed;z-index:12;left:max(10px,env(safe-area-inset-left,0px));right:10px;bottom:calc(20px + env(safe-area-inset-bottom,0px));display:none;gap:14px;align-items:baseline;color:var(--bink);font:500 10px/14px var(--mono);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;overflow:hidden;pointer-events:none}
 .orbinfo .oc{color:var(--fg)}.orbinfo span:not(.oc){color:var(--bsoft)}.orbinfo button{pointer-events:auto;color:var(--bink);font:inherit;letter-spacing:inherit;text-transform:inherit;padding:6px 0}
 body.orbit .orbinfo{display:flex}body.orbit.lb .orbinfo{display:none}
-body.orbit #pickbtn,body.orbit .pvact{display:none}
+body.orbit #pickbtn,body.orbit .pvact,body.orbit #orbbtn,body.orbit .bar a[href*="#about"]{display:none}
 .orbpj{position:fixed;left:0;top:0;z-index:6;display:none;flex-direction:column;align-items:center;transform-origin:0 0;pointer-events:none;font:400 var(--pjs,36px)/1.04 var(--serif);font-variation-settings:"SOFT" 100,"WONK" 0;letter-spacing:-.015em;white-space:nowrap}
 body.orbit .orbpj{display:flex}body.orbit.ofocus .orbpj,body.orbit.lb .orbpj{display:none}
 .orbpj button,.orbpj a{pointer-events:auto;font:inherit;letter-spacing:inherit;color:var(--fg);opacity:.4;background:none;border:0;padding:.03em .12em;cursor:pointer;text-decoration:none;transition:opacity .2s}
@@ -122,6 +123,10 @@ body.oabout.asel .orbab{opacity:0}
 .orbab li b{font-weight:500;font-variant-numeric:tabular-nums}.orbab li span{text-transform:uppercase;letter-spacing:.04em}.orbab li i{font-style:normal;opacity:.72}
 @media (max-aspect-ratio:1/1){.orbab ol{columns:1;width:46ch;font-size:.44em}.orbab h3{font-size:.4em}.orbab .pl{font-size:.62em}}
 .orbab li.gone span::after{content:" (closed)";opacity:.6;text-transform:none}
+.orbpj button{position:relative}.orbpj button .n{position:absolute;left:100%;top:.1em;vertical-align:0;margin-left:.1em}
+.orbpj .vt{display:flex;gap:1.2em;margin-top:.5em;font:500 max(.26em,10px)/1 var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.orbpj .vt button{opacity:1;color:var(--bsoft);padding:.6em .2em}.orbpj .vt button[aria-pressed=true]{color:var(--fg)}
+.orbpj .vt button[aria-pressed=true]::before{content:"["}.orbpj .vt button[aria-pressed=true]::after{content:"]"}
 .orbpj .n{font-size:.32em;vertical-align:.95em;margin-left:.08em;letter-spacing:0;font-variant-numeric:tabular-nums}
 @media (max-width:520px){.bar{font-size:9px;gap:9px;letter-spacing:-.01em;padding-left:8px;padding-right:8px;overflow-x:auto;scrollbar-width:none;pointer-events:auto}.bar::-webkit-scrollbar{display:none}.bar .bl{flex:0 0 auto;overflow:visible}.bar .bl,.bar .br,.bar .fw,.bar .pvact{gap:8px}}
 /* sheets */
@@ -1010,7 +1015,7 @@ function orbSim(a,b){var inter=0;a.s.forEach(function(x){if(b.s.indexOf(x)>-1)in
   var dc=Math.sqrt(Math.pow(a.col.r-b.col.r,2)+Math.pow(a.col.g-b.col.g,2)+Math.pow(a.col.b-b.col.b,2))/441;
   return jac*1.2+(a.s[0]===b.s[0]?.6:0)+(a.p===b.p?.35:0)+(a.t.some(function(x){return b.t.indexOf(x)>-1})?.2:0)+(1-dc)*.8+Math.min(1,wo/2)*.6}
 function orbFit(){var x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;ORB.sys.forEach(function(s){x0=Math.min(x0,s.x-s.R);x1=Math.max(x1,s.x+s.R);y0=Math.min(y0,s.y-s.R);y1=Math.max(y1,s.y+s.R)});
-  var W=innerWidth,H=innerHeight-60,z=Math.min(W/(x1-x0),H/(y1-y0))*.94;ORB.cam={x:(x0+x1)/2,y:(y0+y1)/2,z:z,tz:z,tx:(x0+x1)/2,ty:(y0+y1)/2}}
+  var W=innerWidth,H=innerHeight-60,hw=Math.max(-x0,x1),z=Math.min(W/(2*hw),H/(y1-y0))*.94;ORB.cam={x:0,y:(y0+y1)/2,z:z,tz:z,tx:0,ty:(y0+y1)/2}}
 function orbFocus(i,keep){ORB.focus=i;ORB.near=[];ORB.fg=null;document.body.classList.toggle("ofocus",i>=0);if(i>=0){var a=items[i];
     ORB.near=items.filter(function(b){return b!==a&&!b.hide&&(!active()||on(b))&&(!ORB.proj||b.p===ORB.proj)}).map(function(b){return [orbSim(a,b),b]}).sort(function(x,y){return y[0]-x[0]}).slice(0,42).map(function(x){return x[1]})}
   /* ←/→ and sideways swipes step through the orbit you opened, closest first; tapping a ring picture starts a new one */
@@ -1037,7 +1042,7 @@ function orbInfo(){var el2=document.getElementById("orbinfo");if(!el2)return;el2
     var c0=el("button",null,"All projects");c0.type="button";c0.onclick=function(){orbAbout(false)};el2.appendChild(c0);return}
   if(ORB.focus<0&&ORB.proj&&ORB.pjl){el2.appendChild(el("span","oc",nmOf(PROJ,ORB.proj)));el2.appendChild(el("span",null,ORB.pjl.n+" pictures"));
     var b0=el("button",null,"All projects");b0.type="button";b0.onclick=function(){orbPick(null)};el2.appendChild(b0);return}
-  if(ORB.focus<0){el2.appendChild(el("span",null,"Tap a project to gather it, or a picture to see what orbits it"));return}
+  if(ORB.focus<0){el2.appendChild(el("span",null,"Tap a project or a picture"));return}
   var it=items[ORB.focus],nm=SUBJ.filter(function(s){return it.s.indexOf(s[0])>-1}).map(function(s){return s[1]}).join(", ");
   var pv=el("button",null,"←");pv.type="button";pv.setAttribute("aria-label","Previous picture");pv.onclick=function(){orbStep(-1)};el2.appendChild(pv);
   el2.appendChild(el("span","oc",it.c));el2.appendChild(el("span",null,nm));
@@ -1045,14 +1050,15 @@ function orbInfo(){var el2=document.getElementById("orbinfo");if(!el2)return;el2
   var b=el("button",null,"All subjects");b.type="button";b.onclick=function(){orbFocus(-1)};el2.appendChild(b)}
 /* projects in the middle: names sit at the centre of the oval; picking one pulls its pictures in around the names, each tied by a line to its subject */
 function orbPjBuild(){var c=ORB.pjEl;if(!c)return;c.innerHTML="";
+  var a=el("button",null,"About");a.type="button";a.onclick=function(){orbAbout(true)};c.appendChild(a);
   PROJ.forEach(function(x){var n=items.filter(function(it){return !it.hide&&it.p===x[0]}).length;if(!n)return;
     var b=el("button");b.type="button";b.dataset.k=x[0];b.setAttribute("aria-pressed",ORB.proj===x[0]);b.appendChild(document.createTextNode(x[1]));b.appendChild(el("span","n",String(n)));
     b.onclick=function(){orbPick(ORB.proj===x[0]?null:x[0])};c.appendChild(b)});
-  var a=el("button",null,"About");a.type="button";a.onclick=function(){orbAbout(true)};c.appendChild(a);
+  var vt=el("div","vt");[["Orbit",true],["Wall",false]].forEach(function(v){var b=el("button",null,v[0]);b.type="button";b.setAttribute("aria-pressed",v[1]);b.onclick=function(){if(!v[1])orbToggle(false)};vt.appendChild(b)});c.appendChild(vt);
   if(ORB.proj&&!c.querySelector('[data-k="'+ORB.proj+'"]'))ORB.proj=null}
-function orbPjSize(){var c=ORB.pjEl;if(!c||!ORB.on||ORB.focus>=0)return;var fs=Math.max(24,Math.min(46,Math.min(innerWidth,innerHeight-60)*.045));c.style.setProperty("--pjs",fs+"px");
+function orbPjSize(){var c=ORB.pjEl;if(!c||!ORB.on||ORB.focus>=0)return;var fs=Math.max(innerWidth<500?21:24,Math.min(46,Math.min(innerWidth,innerHeight-60)*.045));c.style.setProperty("--pjs",fs+"px");
   ORB.zF=ORB.cam.tz||1;ORB.hw=c.offsetWidth/2/ORB.zF;ORB.hh=c.offsetHeight/2/ORB.zF;orbProjLay();orbAbSize()}
-function orbPick(k){if(k&&ORB.ab.on)orbAbout(false);ORB.proj=k;if(ORB.pjEl)[].forEach.call(ORB.pjEl.querySelectorAll("button"),function(b){b.setAttribute("aria-pressed",b.dataset.k===k)});orbProjLay();orbInfo();orbWake()}
+function orbPick(k){if(k&&ORB.ab.on)orbAbout(false);ORB.proj=k;if(ORB.pjEl)[].forEach.call(ORB.pjEl.querySelectorAll("button[data-k]"),function(b){b.setAttribute("aria-pressed",b.dataset.k===k)});orbProjLay();orbInfo();orbWake()}
 function orbProjLay(){ORB.pjl=null;var key=ORB.proj;if(!key||!ORB.sys.length)return;
   var list=items.filter(function(it){return !it.hide&&it.orb&&it.p===key});if(!list.length)return;
   var q=ORB.q,f=1e9;ORB.sys.forEach(function(s){var d=Math.hypot(s.x,s.y),th=Math.atan2(s.y,s.x);f=Math.min(f,(d-s.R*ORB.SK-24)*Math.sqrt(Math.pow(q*Math.cos(th),2)+Math.pow(Math.sin(th),2))/q)});
