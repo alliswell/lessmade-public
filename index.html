@@ -266,7 +266,7 @@ body.editing .ed{display:flex}
 .edh .sv{color:var(--bsoft);margin-left:auto}.edh .sv.err{color:var(--bink)}
 .edf{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 20px;padding:8px 18px;border-bottom:1px solid var(--hl);color:var(--bsoft)}
 .edf label{display:flex;gap:6px;align-items:baseline}
-.edm{flex:1;display:flex;min-height:0;position:relative}
+.edm{flex:1;display:flex;min-height:0;position:relative}.ed [hidden]{display:none!important}
 .edtb{flex:1;overflow:auto;min-width:0;overscroll-behavior:contain}
 .ed table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
 .ed th{position:sticky;top:0;z-index:1;background:var(--bg);text-align:left;color:var(--bsoft);font-weight:500;padding:9px 8px 6px;border-bottom:1px solid var(--fg);white-space:nowrap}
@@ -320,6 +320,10 @@ body.editing .ed{display:flex}
 .edp section{max-width:720px;padding:18px 0;border-bottom:1px solid var(--hl)}
 .edp h3{margin:0 0 12px;font:400 26px/1.1 var(--serif);font-variation-settings:"SOFT" 100,"WONK" 0;display:flex;align-items:baseline;gap:14px}
 .edp h3 span{color:var(--bsoft)}
+.eda .lab{display:block;color:var(--bsoft);margin:6px 0 6px}.eda em,.edp label>span em{font-style:normal;text-transform:none;letter-spacing:0;margin-left:8px;opacity:.8}
+.abtl{list-style:none;margin:0 0 12px;padding:0}.abtl li{display:grid;grid-template-columns:7ch 14ch 1fr auto auto auto auto;gap:6px;align-items:center;padding:4px 0;border-top:1px solid var(--hl)}
+.abtl .ck{display:flex;gap:4px;align-items:center;margin:0;white-space:nowrap}.abtl button{min-width:28px}
+@media (max-width:899px){.abtl li{grid-template-columns:7ch 1fr auto auto auto}.abtl li input[data-af=t]{grid-column:1/-1;order:9}.abtl .ck{order:10;grid-column:1/-1}}
 .edp label{display:block;margin:0 0 12px}.edp label>span{display:block;color:var(--bsoft);margin-bottom:4px}
 @media (min-width:900px) and (max-width:1279px){.ed .ty,.ed .in{display:none}}
 @media (max-width:899px){
@@ -1127,9 +1131,15 @@ var ABOUT={name:"Jared Erickson",lines:["Brands rooms + goods","for clubs + memb
   tl:[["2004?","Flash","Downloaded a hacked copy of Flash. Learned ActionScript."],["2005?","Bands","CD inserts for bands. MySpace pages."],["2008","In-house","Internal web, email design and print for conferences."],["2008","Less Made","Started Less Made."],
     ["2010","8bit",""],["2013","Brother Moto","Co-founded. A coffee shop and a member D.I.Y. motorcycle garage, Atlanta. Ran it ten years. Closed 2023."],["20XX?","Polar Notion","",1],["20XX?","St. André",""],["2023","Switchyards","Head of design. Neighborhood clubs."],["Now","Atlanta","Less Made, Switchyards."]]};
 ORB.ab={on:false,sel:-1,ims:[],hw:0,hh:0};
-function orbAbBuild(){if(ORB.abEl)return;var d=el("section","orbab");d.setAttribute("aria-label","About");d.appendChild(el("h2",null,ABOUT.name));
-  var pl=el("p","pl");ABOUT.lines.forEach(function(t,i){if(i)pl.appendChild(document.createElement("br"));pl.appendChild(document.createTextNode(t))});d.appendChild(pl);
-  d.appendChild(el("h3",null,ABOUT.head));var ol=el("ol");ABOUT.tl.forEach(function(r){var li=el("li",r[3]?"gone":null);li.appendChild(el("b",null,r[0]));li.appendChild(el("span",null,r[1]));li.appendChild(el("i",null,r[2]));ol.appendChild(li)});d.appendChild(ol);
+/* About copy kept as {name, lines[], head, tl[{y,n,t,g}]}: ABOUT0 is the default (or the live site's baked copy), ED.ab the edited copy */
+function abNorm(a){a=a||{};return {name:a.name||"",lines:(a.lines||[]).slice(),head:a.head||"",tl:(a.tl||[]).map(function(r){return Array.isArray(r)?{y:r[0]||"",n:r[1]||"",t:r[2]||"",g:!!r[3]}:{y:r.y||"",n:r.n||"",t:r.t||"",g:!!r.g}})}}
+var ABOUT0=abNorm(ABOUT);
+function abCur(){return ED.ab||ABOUT0}
+function orbAbFill(d){var A=abCur();d.innerHTML="";d.appendChild(el("h2",null,A.name));
+  var pl=el("p","pl");A.lines.forEach(function(t,i){if(i)pl.appendChild(document.createElement("br"));pl.appendChild(document.createTextNode(t))});d.appendChild(pl);
+  if(A.head)d.appendChild(el("h3",null,A.head));var ol=el("ol");A.tl.forEach(function(r){var li=el("li",r.g?"gone":null);li.appendChild(el("b",null,r.y));li.appendChild(el("span",null,r.n));li.appendChild(el("i",null,r.t));ol.appendChild(li)});d.appendChild(ol)}
+function abApply(){if(ORB.abEl){orbAbFill(ORB.abEl);orbAbSize()}}
+function orbAbBuild(){if(ORB.abEl)return;var d=el("section","orbab");d.setAttribute("aria-label","About");orbAbFill(d);
   ORB.abEl=d;document.body.insertBefore(d,document.getElementById("bar"));
   ORB.ab.ims=MEPICS.map(function(n){var im=new Image();var o={im:im,ar:.75,ok:false,cur:{x:innerWidth/2,y:innerHeight/2,s:0,a:0}};im.onload=function(){o.ok=true;o.ar=im.naturalWidth/im.naturalHeight;orbAbLay();orbWake()};im.src="about/"+n+".jpg";return o})}
 function orbAbout(on2){var A=ORB.ab;if(on2&&!ORB.on)orbToggle(true);if(on2){orbAbBuild();if(ORB.focus>=0)orbFocus(-1);if(ORB.proj)orbPick(null)}
@@ -1390,7 +1400,7 @@ vswFill(document.getElementById("vsw"));
 
 /* ---- editing. Edits live in the artifact's database (items/<id>, projects/<key>, notes/<id>) and are laid over wall.json.
    Only the owner and editors see the Edit button; everyone signed in sees the edits. ---- */
-var ED={db:null,can:false,ov:{},pj:{},notes:{},dirty:{},ver:{},tm:{},q:{},on:false,tab:"pics",sk:"i",sd:1,grp:"",fp:"",ft:"",fs:"",fh:"",qs:"",sel:{},cur:null,anchor:null,rows:[],ui:null,io:null,chg:{},err:false};
+var ED={db:null,can:false,ov:{},pj:{},notes:{},ab:null,dirty:{},ver:{},tm:{},q:{},on:false,tab:"pics",sk:"i",sd:1,grp:"",fp:"",ft:"",fs:"",fh:"",qs:"",sel:{},cur:null,anchor:null,rows:[],ui:null,io:null,chg:{},err:false};
 var IBY={},RAW={},PROJ0=null,EDK=["d","yr","role","place","link","tags","g"];
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function edBase(it){if(!it.o0){it.o0={c:it.c,p:it.p,t:it.t.slice(),s:it.s.slice(),hide:it.hide};EDK.forEach(function(k){it.o0[k]=it[k]||""})}return it.o0}
@@ -1406,7 +1416,7 @@ var edT=0,edS=false;
 function edAfter(st){if(st)edS=true;clearTimeout(edT);edT=setTimeout(function(){var ch=ED.chg;ED.chg={};
   if(edS){edS=false;ORB.ready=false;if(ORB.on)orbPrep();dock();layout()}
   if(bigI>=0)setCap();if(ORB.on){orbPjBuild();orbPjSize();orbInfo()}
-  try{localStorage.setItem("lm-wall-edits",JSON.stringify({ov:ED.ov,pj:ED.pj}))}catch(_){}
+  try{localStorage.setItem("lm-wall-edits",JSON.stringify({ov:ED.ov,pj:ED.pj,ab:ED.ab}))}catch(_){}
   if(ED.on&&ED.ui){Object.keys(ch).forEach(edRowUpd);edCount()}if((ED.on||ED.quick)&&ED.ui&&ED.cur&&ch[ED.cur])edFill(true)},120)}
 function edStat(){if(!ED.ui)return;var n=Object.keys(ED.dirty).length,s=ED.ui.sv;s.classList.toggle("err",ED.err);s.textContent=ED.err?"Not saved. Check your connection":n?"Saving…":"Saved"}
 /* one write at a time per document, after a pause in typing */
@@ -1432,13 +1442,14 @@ function noteSet(id,v){if(v.trim())ED.notes[id]=v;else delete ED.notes[id];if(ED
 
 function edInit(){items.forEach(function(it){IBY[it.id]=it;edBase(it);EDK.forEach(function(k){it[k]=it[k]||""})});
   /* last visit's edits first, so the wall doesn't change shape when the database answers */
-  try{var c=JSON.parse(localStorage.getItem("lm-wall-edits")||"null");if(c){ED.ov=c.ov||{};ED.pj=c.pj||{};var st=false;Object.keys(ED.ov).forEach(function(id){if(edApply(id))st=true});pjApply();if(st){dock();layout()}}}catch(_){}
+  try{var c=JSON.parse(localStorage.getItem("lm-wall-edits")||"null");if(c){ED.ov=c.ov||{};ED.pj=c.pj||{};ED.ab=c.ab?abNorm(c.ab):null;abApply();var st=false;Object.keys(ED.ov).forEach(function(id){if(edApply(id))st=true});pjApply();if(st){dock();layout()}}}catch(_){}
   if(!window.claude||!claude.use)return;
   claude.use("db").then(function(db){if(!db)return null;ED.db=db;
     var firstI=true;db.collection("items").onSnapshot(function(s){var st=false;
       if(firstI&&!s.metadata.fromCache){firstI=false;Object.keys(ED.ov).forEach(function(id){if(!ED.dirty["i:"+id]&&!s.docs.some(function(d){return d.id===id})){delete ED.ov[id];if(edApply(id))st=true}})}
       s.docChanges().forEach(function(ch){var id=ch.doc.id;if(ED.dirty["i:"+id])return;if(ch.type==="removed")delete ED.ov[id];else ED.ov[id]=JSON.parse(JSON.stringify(ch.doc.data()||{}));if(edApply(id))st=true});edAfter(st)},function(){});
     db.collection("projects").onSnapshot(function(s){s.docChanges().forEach(function(ch){var k=ch.doc.id;if(ED.dirty["p:"+k])return;if(ch.type==="removed")delete ED.pj[k];else ED.pj[k]=Object.assign({},ch.doc.data())});pjApply();edAfter(false);if(ED.on&&ED.tab==="proj")edProj()},function(){});
+    db.collection("about").onSnapshot(function(s){if(ED.dirty["a:main"])return;var d=s.docs.find(function(x){return x.id==="main"});ED.ab=d?abNorm(d.data()):null;abApply();edAfter(false);if(ED.on&&ED.tab==="about")edAbout()},function(){});
     return claude.use("user")}).then(function(u){if(!u)return false;return u.canEdit()}).then(function(can){if(!can||!ED.db)return;ED.can=true;var b=document.getElementById("edbtn");b.hidden=false;
     ED.db.collection("notes").onSnapshot(function(s){s.docChanges().forEach(function(ch){var id=ch.doc.id;if(ED.dirty["n:"+id])return;if(ch.type==="removed")delete ED.notes[id];else ED.notes[id]=(ch.doc.data()||{}).n||""});if((ED.on||ED.quick)&&ED.cur)edFill(true)},function(){})}).catch(function(){})}
 
@@ -1452,11 +1463,11 @@ function edOpen(){if(!ED.can)return;edUI();ED.on=true;if(bigI>=0)closeBig(true);
   document.body.classList.add("editing");if(!ORB.ready)orbPrep();edTab(ED.tab);setTimeout(function(){ED.ui.q.focus()},30)}
 function edClose(){ED.on=false;document.body.classList.remove("editing");ED.ui.root.classList.remove("det");var b=document.getElementById("edbtn");if(b)b.focus();kick()}
 function edTab(t){ED.tab=t;var u=ED.ui;[].forEach.call(u.tabs.children,function(b){b.setAttribute("aria-pressed",b.dataset.t===t)});
-  u.f.hidden=u.m.hidden=t!=="pics";u.p.hidden=t!=="proj";if(t==="pics")edRender();else edProj()}
+  u.f.hidden=u.m.hidden=t!=="pics";u.p.hidden=t!=="proj";u.a.hidden=t!=="about";if(t==="pics")edRender();else if(t==="about")edAbout();else edProj()}
 function opt(v,t,sel){return "<option value='"+esc(v)+"'"+(sel?" selected":"")+">"+esc(t)+"</option>"}
 function edUI(){if(ED.ui)return;var r=el("section","ed");r.id="ed";r.setAttribute("role","dialog");r.setAttribute("aria-modal","true");r.setAttribute("aria-label","Edit pictures");
   var pOpts=PROJ.map(function(x){return opt(x[0],x[1])}).join(""),tOpts=TYPES.map(function(x){return opt(x[0],x[1])}).join(""),sOpts=SUBJ.map(function(x){return opt(x[0],x[1])}).join("");
-  r.innerHTML="<header class='edh'><b>Edit</b><span class='n' data-r='n'></span><nav class='tabs'><button type='button' data-t='pics'>Pictures</button><button type='button' data-t='proj'>Projects</button></nav>"+
+  r.innerHTML="<header class='edh'><b>Edit</b><span class='n' data-r='n'></span><nav class='tabs'><button type='button' data-t='pics'>Pictures</button><button type='button' data-t='proj'>Projects</button><button type='button' data-t='about'>About</button></nav>"+
     "<input type='search' data-r='q' placeholder='Search captions, descriptions, tags, IDs, files' aria-label='Search'><span class='sv' data-r='sv' role='status'>Saved</span><button type='button' class='qall' data-r='qa'>All pictures</button><button type='button' data-r='x'>Close</button></header>"+
     "<div class='edf' data-r='f'><label>Project<select data-f='fp'>"+opt("","All")+pOpts+"</select></label><label>Type<select data-f='ft'>"+opt("","All")+tOpts+"</select></label>"+
     "<label>Subject<select data-f='fs'>"+opt("","All")+sOpts+"</select></label><label>Show<select data-f='fh'>"+opt("","All")+opt("shown","On the wall")+opt("hidden","Hidden")+opt("nodesc","No description")+opt("edited","Edited")+opt("video","Videos")+"</select></label>"+
@@ -1466,7 +1477,7 @@ function edUI(){if(ED.ui)return;var r=el("section","ed");r.id="ed";r.setAttribut
     "<label>Add subject<select data-b='s+'>"+opt("","—")+sOpts+"</select></label><label>Remove subject<select data-b='s-'>"+opt("","—")+sOpts+"</select></label>"+
     "<label>Add type<select data-b='t+'>"+opt("","—")+tOpts+"</select></label><label>Remove type<select data-b='t-'>"+opt("","—")+tOpts+"</select></label>"+
     "<button type='button' data-b='hide'>Hide</button><button type='button' data-b='show'>Show</button><button type='button' data-b='clear'>Clear selection</button></div>"+
-    "<div class='edp' data-r='p' hidden></div>";
+    "<div class='edp' data-r='p' hidden></div><div class='edp eda' data-r='a' hidden></div>";
   document.body.appendChild(r);var u={root:r};r.querySelectorAll("[data-r]").forEach(function(e){u[e.dataset.r]=e});u.tabs=r.querySelector(".tabs");ED.ui=u;
   /* the wall listens for keys and the wheel on the window; keep the editor's to itself */
   ["keydown","wheel"].forEach(function(t){r.addEventListener(t,function(e){e.stopPropagation()})});
@@ -1584,10 +1595,32 @@ function edProj(){var p=ED.ui.p;if(!PROJ0)PROJ0=PROJ.map(function(x){return x.sl
       "<button type='button' data-show='"+x[0]+"'>See these pictures</button></section>"}).join("");
   p.oninput=function(e){var f=e.target,s=f.closest("section");if(!f.dataset.pf||!s)return;pjSet(s.dataset.pk,f.dataset.pf,f.value);if(f.dataset.pf==="name")s.querySelector("h3").firstChild.textContent=f.value||PROJ0[PROJ.findIndex(function(x){return x[0]===s.dataset.pk})][1]};
   p.onclick=function(e){var b=e.target.closest("[data-show]");if(!b)return;ED.fp=b.dataset.show;ED.fh=ED.ft=ED.fs="";edTab("pics")}}
+/* About: name, lines under it, heading, and the timeline rows */
+function abSet(A){var same=JSON.stringify(A)===JSON.stringify(ABOUT0);ED.ab=same?null:A;abApply();edAfter(false);
+  if(ED.db)edWrite("about/main",function(){return ED.ab?JSON.parse(JSON.stringify(ED.ab)):null},"a:main")}
+function edAbout(){var p=ED.ui.a,A=abCur();if(document.activeElement&&p.contains(document.activeElement)&&document.activeElement.dataset.af)return;
+  var rows=A.tl.map(function(r,i){return "<li data-i='"+i+"'><input type='text' data-af='y' value='"+esc(r.y)+"' aria-label='Year' placeholder='Year'><input type='text' data-af='n' value='"+esc(r.n)+"' aria-label='Name' placeholder='Name'>"+
+    "<input type='text' data-af='t' value='"+esc(r.t)+"' aria-label='Text' placeholder='What happened'><label class='ck'><input type='checkbox' data-af='g'"+(r.g?" checked":"")+">Closed</label>"+
+    "<button type='button' data-ab='up' aria-label='Move up'"+(i?"":" disabled")+">↑</button><button type='button' data-ab='dn' aria-label='Move down'"+(i<A.tl.length-1?"":" disabled")+">↓</button><button type='button' data-ab='rm' aria-label='Remove row'>×</button></li>"}).join("");
+  p.innerHTML="<section><h3>About<span>Shows in the middle of Orbit</span></h3>"+
+    "<label><span>Name</span><input type='text' data-af='name' value='"+esc(A.name)+"'></label>"+
+    "<label><span>Lines under the name<em>One per line</em></span><textarea data-af='lines' rows='3'>"+esc(A.lines.join("\n"))+"</textarea></label>"+
+    "<label><span>Timeline heading</span><input type='text' data-af='head' value='"+esc(A.head)+"'></label>"+
+    "<div class='lab'>Timeline<em>Year · name · what happened. Closed adds “(closed)” after the name</em></div><ol class='abtl'>"+rows+"</ol>"+
+    "<button type='button' data-ab='add'>Add row</button>"+(ED.ab?" <button type='button' data-ab='reset'>Back to original</button>":"")+"</section>";
+  function cur(){return abNorm(abCur())}
+  p.oninput=p.onchange=function(e){var f=e.target,k=f.dataset.af;if(!k)return;var A=cur(),li=f.closest("li[data-i]");
+    if(li){var r=A.tl[+li.dataset.i];if(k==="g")r.g=f.checked;else r[k]=f.value}else if(k==="lines")A.lines=f.value.split("\n");else A[k]=f.value;
+    if(k==="lines"&&e.type==="change")A.lines=A.lines.filter(function(x){return x.trim()});abSet(A)};
+  p.onclick=function(e){var b=e.target.closest("[data-ab]");if(!b)return;var A=cur(),li=b.closest("li[data-i]"),i=li?+li.dataset.i:-1,a=b.dataset.ab;
+    if(a==="add")A.tl.push({y:"",n:"",t:"",g:false});else if(a==="rm"){if(!confirm("Remove “"+(A.tl[i].n||A.tl[i].y||"this row")+"”?"))return;A.tl.splice(i,1)}
+    else if(a==="up"&&i>0)A.tl.splice(i-1,0,A.tl.splice(i,1)[0]);else if(a==="dn"&&i<A.tl.length-1)A.tl.splice(i+1,0,A.tl.splice(i,1)[0]);
+    else if(a==="reset"){if(!confirm("Put the About copy back to the original?"))return;A=abNorm(ABOUT0)}
+    abSet(A);edAbout();if(a==="add"){var n=p.querySelectorAll("li[data-i]");n=n[n.length-1];if(n)n.querySelector("input").focus()}}}
 document.getElementById("edbtn").onclick=edOpen;
 
 fetch("wall.json",{cache:"no-cache"}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(d){
-  (d.items||[]).forEach(function(x){if(x.b)BLR[x.id]=x.b});
+  if(d.about){ABOUT0=abNorm(d.about);abApply()}(d.items||[]).forEach(function(x){if(x.b)BLR[x.id]=x.b});
   PACKS=(d.packs||[]).map(function(p){return typeof p==="string"?null:p}).filter(Boolean);PACKS.forEach(function(p,k){p.ids.forEach(function(id){PKOF[id]=k})});
   (d.full||[]).forEach(function(p){var o=0;p.ids.forEach(function(id,j){FOF[id]={p:p,o:o,n:p.len[j]};o+=p.len[j]})});
   (d.items||[]).forEach(function(x){RAW[x.id]=x});build(d.items);edInit();if(location.hash.indexOf("#picks-")===0)intro();else orbToggle(true);READY=true;requestAnimationFrame(function(){pump();vscan()})}).catch(function(){if(items.length)return;var m=el("p","oops","The wall didn't load. Reload the page to try again.");document.body.appendChild(m)});
