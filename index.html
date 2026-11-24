@@ -138,6 +138,12 @@ body.vscroll .scv{display:block}body.vscroll .field,body.vscroll .orb,body.vscro
 .sfl button sup{font-size:inherit;vertical-align:baseline;margin-left:.4em;color:var(--bsoft)}
 .sfl button[aria-pressed=true]{color:var(--fg)}.sfl button[aria-pressed=true]::before{content:"["}.sfl button[aria-pressed=true]::after{content:"]"}
 .sfl button:disabled{opacity:.3;cursor:default}.sfl .clr{color:var(--bsoft)}
+.sfl h3{display:none;margin:0;font:500 10px/14px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--bsoft)}
+/* desktop: filters become a left rail that stays put while the stream scrolls */
+@media (min-width:900px){.scv{padding-left:236px}
+  .sfl{position:fixed;left:max(24px,env(safe-area-inset-left,0px));top:calc(10px + env(safe-area-inset-top,0px) + var(--size,48px)*1.25 + 34px);bottom:56px;width:188px;margin:0;align-items:flex-start;text-align:left;gap:18px;overflow-y:auto;scrollbar-width:none;z-index:6}
+  .sfl::-webkit-scrollbar{display:none}.sfl h3{display:block;margin-bottom:2px}
+  .sfl .r{flex-direction:column;align-items:flex-start;gap:0}.sfl button{padding:3px 0}}
 .ss header{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;margin-bottom:28px}.ss .ix,.ss .ct{display:none!important}
 .ss .ix,.ss .pj,.ss .ct{font:500 10px/14px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--bsoft)}
 .ss .pj{color:var(--bink)}.ss .ct{margin-left:auto;font-variant-numeric:tabular-nums}
@@ -1362,8 +1368,8 @@ function scvInit(){var d=el("div","scv");d.id="scv";d.setAttribute("aria-label",
   d.addEventListener("scroll",function(){if(!WARM){WARM=true;pump()}},{passive:true})}
 /* filter rows at the top of Scroll: project, subject, type. Counts follow the other two choices. */
 function scvFilters(){var box=SCV.fl;if(!box)return;box.innerHTML="";var cnt=function(k,v){return items.filter(function(it){var s2={p:S.p,t:S.t,s:S.s};s2[k]=v;return !it.hide&&(!s2.p||it.p===s2.p)&&(!s2.t||it.t.indexOf(s2.t)>-1)&&(!s2.s||it.s.indexOf(s2.s)>-1)}).length};
-  [["p",PROJ],["s",SUBJ],["t",TYPES]].forEach(function(k){var r=el("div","r");k[1].forEach(function(o){var n=cnt(k[0],o[0]),sel=S[k[0]]===o[0];if(!n&&!sel)return;
-      var b=el("button",null,o[1]);b.type="button";b.setAttribute("aria-pressed",sel);b.appendChild(el("sup",null,String(n)));b.onclick=function(){S[k[0]]=sel?null:o[0];filtApply()};r.appendChild(b)});box.appendChild(r)});
+  [["p",PROJ,"Project"],["s",SUBJ,"Subject"],["t",TYPES,"Type"]].forEach(function(k){var w=el("div","g");w.appendChild(el("h3",null,k[2]));var r=el("div","r");w.appendChild(r);k[1].forEach(function(o){var n=cnt(k[0],o[0]),sel=S[k[0]]===o[0];if(!n&&!sel)return;
+      var b=el("button",null,o[1]);b.type="button";b.setAttribute("aria-pressed",sel);b.appendChild(el("sup",null,String(n)));b.onclick=function(){S[k[0]]=sel?null:o[0];filtApply()};r.appendChild(b)});box.appendChild(w)});
   if(active()){var c=el("button","clr","Clear filters");c.type="button";c.onclick=function(){S.p=S.t=S.s=null;filtApply()};box.appendChild(c)}}
 function scvReset(){if(!SCV.el)return;SCV.el.querySelectorAll(".sf").forEach(function(f){SCV.fio.unobserve(f)});SCV.vis.clear();SCV.el.querySelectorAll(".ss").forEach(function(x){x.remove()});SCV.groups=scvGroups();SCV.next=0;SCV.n=0;SCV.el.scrollTop=0;scvFilters();scvMore(3)}
 function scvToggle(on2){if(on2===SCV.on)return;SCV.on=on2;document.body.classList.toggle("vscroll",on2);
