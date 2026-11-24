@@ -1336,15 +1336,17 @@ function setView(v){if(v===curView())return;if(bigI>=0)closeBig(true);if(v==="sc
 function vswFill(box){box.innerHTML="";[["orbit","Orbit"],["wall","Wall"],["scroll","Scroll"]].forEach(function(v){var b=el("button",null,v[1]);b.type="button";b.dataset.v=v[0];b.setAttribute("aria-pressed",curView()===v[0]);b.onclick=function(){setView(v[0])};box.appendChild(b)})}
 function vswSync(){document.querySelectorAll(".vsw button,.orbpj .vt button").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.v===curView())})}
 /* ---- Scroll: an endless stream, section by section. Each section is one project and one subject (up to 9 pictures);
-   sections take turns across projects and start over at the end. Pictures show their thumbnail when near and the full-size
+   sections (project x group, 9 at a time) take turns across projects and start over at the end. Pictures show their thumbnail when near and the full-size
    picture once on screen; videos play while mostly in view. Tap a picture to open the viewer. ---- */
 var SCV={on:false,el:null,groups:null,next:0,n:0,io:null,io2:null,vio:null,fio:null,sent:null,vis:new Set(),pm:{x:0,y:0,tx:0,ty:0},raf:0,act:0};
 function scvGroups(){var by={};PROJ.forEach(function(x){by[x[0]]=[]});
   items.forEach(function(it){if(it.hide||!(by[it.p]))return;if(active()&&!on(it))return;by[it.p].push(it)});
   var queues=PROJ.map(function(x){var list=by[x[0]],sub={},order=[];
-    list.forEach(function(it){var k=(it.s&&it.s[0])||"other";if(!sub[k]){sub[k]=[];order.push(k)}sub[k].push(it)});
-    order.sort(function(a,b){var ia=SUBJ.findIndex(function(z){return z[0]===a}),ib=SUBJ.findIndex(function(z){return z[0]===b});return (ia<0?99:ia)-(ib<0?99:ib)});
-    var q=[];order.forEach(function(k){var arr=sub[k],nm=(SUBJ.find(function(z){return z[0]===k})||[k,"Other"])[1];for(var i=0;i<arr.length;i+=9)q.push({p:x[0],pn:x[1],t:nm,its:arr.slice(i,i+9)})});return q}).filter(function(q){return q.length});
+    /* one run of sections per filter group, in filter order; inside a group, like subjects sit together */
+    var si=function(it){var k=SUBJ.findIndex(function(z){return z[0]===(it.s&&it.s[0])});return k<0?99:k};
+    list.forEach(function(it){var k=it.g||"brand";if(!sub[k]){sub[k]=[];order.push(k)}sub[k].push(it)});
+    order.sort(function(a,b){var ia=CATS.findIndex(function(z){return z[0]===a}),ib=CATS.findIndex(function(z){return z[0]===b});return (ia<0?99:ia)-(ib<0?99:ib)});
+    var q=[];order.forEach(function(k){var arr=sub[k].slice().sort(function(a,b){return si(a)-si(b)||a.i-b.i}),nm=nmOf(CATS,k);for(var i=0;i<arr.length;i+=9)q.push({p:x[0],pn:x[1],t:nm,its:arr.slice(i,i+9)})});return q}).filter(function(q){return q.length});
   var out=[],any=true;while(any){any=false;queues.forEach(function(q){if(q.length){out.push(q.shift());any=true}})}return out}
 function scvSection(g){var sec=el("section","ss"),hd=el("header");SCV.n++;
   hd.appendChild(el("span","ix",String(SCV.n).padStart(3,"0")));hd.appendChild(el("span","pj",g.pn));hd.appendChild(el("span","ct",g.its.length+(g.its.length===1?" picture":" pictures")));hd.appendChild(el("h2",null,g.t));sec.appendChild(hd);
