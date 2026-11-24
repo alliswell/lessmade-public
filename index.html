@@ -1038,7 +1038,7 @@ function orbInfo(){var el2=document.getElementById("orbinfo");if(!el2)return;el2
   if(ORB.focus<0&&ORB.ab.on){var A=ORB.ab;el2.appendChild(el("span","oc","About"));
     if(A.sel>=0){var p0=el("button",null,"←");p0.type="button";p0.setAttribute("aria-label","Younger");p0.onclick=function(){orbAbStep(-1)};el2.appendChild(p0);
       el2.appendChild(el("span",null,(A.sel+1)+" of "+A.ims.length));var n0=el("button",null,"→");n0.type="button";n0.setAttribute("aria-label","Older");n0.onclick=function(){orbAbStep(1)};el2.appendChild(n0)}
-    else el2.appendChild(el("span",null,"Me, youngest first"));
+    else el2.appendChild(el("span",null,matchMedia("(pointer:coarse)").matches?"Pull down to close":"Me, youngest first"));
     var c0=el("button",null,"All projects");c0.type="button";c0.onclick=function(){orbAbout(false)};el2.appendChild(c0);return}
   if(ORB.focus<0&&ORB.proj&&ORB.pjl){el2.appendChild(el("span","oc",nmOf(PROJ,ORB.proj)));el2.appendChild(el("span",null,ORB.pjl.n+" pictures"));
     var b0=el("button",null,"All projects");b0.type="button";b0.onclick=function(){orbPick(null)};el2.appendChild(b0);return}
@@ -1115,7 +1115,8 @@ function orbAbHit(px,py){var A=ORB.ab;if(!A.on||ORB.focus>=0)return -1;for(var i
 function orbAbDraw(x,W,H,c,cz0){var A=ORB.ab,n=A.ims.length;if(!n)return false;var mv=false,k=RM?1:.16,t=ORB.abT,e=t*t*(3-2*t),d=ORB.abEl;
   var mk=document.querySelector(".mark"),top1=(mk?mk.getBoundingClientRect().bottom:60)+14,bw=d&&d.offsetWidth||1,bh=d&&d.offsetHeight||1,s0=cz0/(ORB.zF||1),s1=Math.min(1.3,(W-32)/bw),sc=s0+(s1-s0)*e;
   var Wc=W/2-c.x*cz0,Hc=H/2-c.y*cz0,cols=W<700?2:4,cw=(W-32)/cols,rows=Math.ceil(n/cols),rh=cw*(cols===2?1.12:.92),ft=top1+bh*s1+30;
-  A.maxS=Math.max(0,ft+rows*rh+40-(H-70));ORB.abS=Math.max(0,Math.min(A.maxS,ORB.abS||0));var S=ORB.abS*e;
+  A.maxS=Math.max(0,ft+rows*rh+40-(H-70));ORB.abS=Math.max(0,Math.min(A.maxS,ORB.abS||0));
+  if(!ORB.abDrag&&ORB.abPull>0){ORB.abPull=ORB.abPull<.5?0:ORB.abPull*(RM?0:.8);mv=true}var S=(ORB.abS-(ORB.abPull||0))*e;
   /* scrolling down, the header drifts back: it moves slower, shrinks a little and fades */
   if(A.on&&d){var rec=Math.min(1,S/(bh*s1+1));sc*=1-.1*rec;var L=(Wc-bw*sc/2)*(1-e)+(W/2-bw*sc/2)*e,Tp=(Hc-bh*s0/2)*(1-e)+(top1-S*.7)*e;d.style.transform="translate("+L+"px,"+Tp+"px) scale("+sc+")";d.style.opacity=A.sel>=0?"0":String(Math.max(0,1-S/(bh*s1*.55+1)))}
   var pm=ORB.pm||(ORB.pm={x:0,y:0});pm.x+=((ORB.mx||0)-pm.x)*.06;pm.y+=((ORB.my||0)-pm.y)*.06;
@@ -1248,9 +1249,11 @@ function orbEvents(cv){var pts=ORB.ptr,pinch=null;
     if(!p){if(e.pointerType==="mouse"){var h=orbAbHit(e.clientX,e.clientY)>=0?1e9:orbHit(e.clientX,e.clientY);if(h===1e9){cv.style.cursor="pointer";if(ORB.hover>=0){ORB.hover=-1}return}if(h!==ORB.hover){ORB.hover=h;cv.style.cursor=h>=0?"pointer":"grab"}}return}
     var dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;var ks=Object.keys(pts);
     if(pinch&&ks.length===2){var a=pts[ks[0]],b=pts[ks[1]];a.pz=b.pz=1;var zz=pinch.z*Math.hypot(a.x-b.x,a.y-b.y)/pinch.d;if(ORB.focus>=0)ORB.fc.tz=Math.max(.3,Math.min(4,zz));else ORB.cam.tz=Math.max(.08,Math.min(3,zz));return}
+    if(ORB.ab.on&&ORB.focus<0&&ORB.ab.sel<0&&(ORB.abS||0)<=0&&(dy>0||ORB.abPull>0)){ORB.abPull=Math.max(0,(ORB.abPull||0)+dy*.55);ORB.abDrag=true;ORB.abV=0;return}
     if(ORB.ab.on&&ORB.focus<0){ORB.abS=Math.max(0,Math.min(ORB.ab.maxS||0,(ORB.abS||0)-dy));var tn=performance.now(),dtm=Math.max(1,tn-(p.lt||tn-16));p.lt=tn;ORB.abV=(ORB.abV||0)*.6+(-dy/dtm)*.4;ORB.abDrag=true;return}
     var C=ORB.focus>=0?ORB.fc:ORB.cam;C.tx-=dx/C.z;C.ty-=dy/C.z;C.x=C.tx;C.y=C.ty});
-  function up(e){if(ORB.abDrag){ORB.abDrag=false;if(performance.now()-((pts[e.pointerId]||{}).lt||0)>90)ORB.abV=0;orbWake()}var p=pts[e.pointerId];delete pts[e.pointerId];if(Object.keys(pts).length<2)pinch=null;if(!p)return;
+  function up(e){if(ORB.abPull>0&&ORB.ab.on){var pl=ORB.abPull;ORB.abDrag=false;delete pts[e.pointerId];if(Object.keys(pts).length<2)pinch=null;if(pl>70)orbAbout(false);orbWake();return}
+    if(ORB.abDrag){ORB.abDrag=false;if(performance.now()-((pts[e.pointerId]||{}).lt||0)>90)ORB.abV=0;orbWake()}var p=pts[e.pointerId];delete pts[e.pointerId];if(Object.keys(pts).length<2)pinch=null;if(!p)return;
     var sdx=e.clientX-p.sx,sdy=e.clientY-p.sy;
     /* in an orbit a slow drag moves it; a quick flick steps (sideways) or closes (down) */
     if(Math.hypot(sdx,sdy)>7){if(ORB.focus>=0&&!p.pz&&performance.now()-p.t0<300){var fl=sdy>70&&sdy>Math.abs(sdx)*1.2?"down":Math.abs(sdx)>50&&Math.abs(sdx)>Math.abs(sdy)*1.2?"side":"";
