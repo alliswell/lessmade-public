@@ -130,12 +130,11 @@ body.oabout.asel .orbab{opacity:0}
 /* scroll view: an endless stream of sections, native scrolling */
 .scv{position:fixed;inset:0;z-index:5;display:none;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;background:var(--bg);color:var(--fg);box-sizing:border-box;padding:calc(10px + env(safe-area-inset-top,0px) + var(--size,48px)*1.25 + 28px) 16px calc(90px + env(safe-area-inset-bottom,0px))}
 body.vscroll .scv{display:block}body.vscroll .field,body.vscroll .orb,body.vscroll .orbpj,body.vscroll .orbinfo,body.vscroll .orbab{display:none!important}
-body.vscroll .mark{background:linear-gradient(var(--bg) 72%,color-mix(in srgb,var(--bg) 0%,transparent));padding-bottom:.25em}
 .ss{max-width:1040px;margin:0 auto 96px}
-.ss header{display:flex;align-items:baseline;gap:6px 16px;flex-wrap:wrap;border-top:1px solid color-mix(in srgb,var(--fg) 22%,transparent);padding-top:12px;margin-bottom:22px}
+.ss header{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;margin-bottom:28px}.ss .ix,.ss .ct{display:none!important}
 .ss .ix,.ss .pj,.ss .ct{font:500 10px/14px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--bsoft)}
 .ss .pj{color:var(--bink)}.ss .ct{margin-left:auto;font-variant-numeric:tabular-nums}
-.ss h2{margin:0;font:400 clamp(30px,5.2vw,56px)/1 var(--serif);font-variation-settings:"SOFT" 100,"WONK" 0;letter-spacing:-.015em;flex:1 1 100%;order:3}
+.ss h2{margin:0;font:400 clamp(30px,5.2vw,56px)/1 var(--serif);font-variation-settings:"SOFT" 100,"WONK" 0;letter-spacing:-.015em}
 .sg{display:grid;grid-template-columns:repeat(6,1fr);gap:30px 18px;align-items:end}
 .sf{margin:0;grid-column:span 6}.sf.s3{grid-column:span 3}.sf.s4{grid-column:2/span 4}.sf.s5{grid-column:span 5}.sf.s5r{grid-column:2/span 5}
 .sf .pic{display:block;width:100%;padding:0;border:0;background:color-mix(in srgb,var(--fg) 6%,transparent);cursor:zoom-in;overflow:hidden;will-change:transform,opacity;transform:translate3d(0,70px,0)}
