@@ -119,7 +119,7 @@ body.oabout.asel .orbab{opacity:0}
 .orbab h2{margin:0;font:inherit;color:var(--red);text-align:center}
 .orbab .pl{margin:.1em 0 .7em;font-size:.5em;line-height:1.15;text-align:center;opacity:.72}
 .orbab h3{margin:0 0 .5em;font:500 .24em/1.4 var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--bink);text-align:center}
-.orbab ol{list-style:none;margin:0 auto;padding:0;font:400 .24em/1.45 var(--mono);letter-spacing:0;width:92ch;columns:2;column-gap:4ch}
+.orbab ol{list-style:none;margin:0 auto;padding:0;font:400 .24em/1.45 var(--mono);letter-spacing:0;width:64ch}
 .orbab li{break-inside:avoid;display:grid;grid-template-columns:6ch 14ch 1fr;gap:0 1ch;padding:.25em 0;border-top:1px solid color-mix(in srgb,var(--fg) 16%,transparent)}
 .orbab li b{font-weight:500;font-variant-numeric:tabular-nums}.orbab li span{text-transform:uppercase;letter-spacing:.04em}.orbab li i{font-style:normal;opacity:.72}
 @media (max-aspect-ratio:1/1){.orbab ol{columns:1;width:46ch;font-size:.44em}.orbab h3{font-size:.4em}.orbab .pl{font-size:.62em}}
@@ -1028,7 +1028,7 @@ function hiscan(){if(bigI>=0||ORB.on)return;
   fullUrl(it.id).then(function(u){var im=new Image();im.onload=function(){it.hi=2;it.clones.forEach(function(c){var m=c.querySelector("img");m._tid=null;m.src=u;c._hw=0;if(!c._hv)ld(c,false)})};im.onerror=fail;im.src=u},fail)})}document.addEventListener("visibilitychange",function(){vscan()});
 
 /* ---- Orbit: pictures circle the ones they're most like ----
-   Overview: one system per subject, related subjects side by side; each system's pictures ride hairline rings, ordered by colour.
+   Overview: one system per filter group; each system's pictures ride hairline rings, ordered by colour.
    Focus: tap a picture and its closest matches (subject, colour, project, caption words) circle it, nearest first. */
 var SUBJ=[["riding","Riding"],["motorcycles","Motorcycles"],["people","People"],["storefront","Storefronts"],["signs","Lettering & signs"],["posters","Posters & print"],["sketches","Sketches"],["interiors","Interiors"],["buildout","Build-out"],["screens","Screens"],["goods","Goods"],["coffee","Coffee"],["apparel","Apparel"],["headwear","Headwear"]];
 var ORB={want:{},pv:{},on:false,focus:-1,cv:null,x:null,dpr:1,cam:{x:0,y:0,z:1},sys:[],cur:[],clock:0,last:0,lastAct:0,ptr:{},hover:-1,bm:{},bq:0,big:{},rings:[],raf:0,ready:false,fc:{x:0,y:0,z:1,tx:0,ty:0,tz:1},SK:.5,sk:1,proj:null,pjl:null,hw:0,hh:0,zF:1};
@@ -1041,7 +1041,8 @@ function orbPrep(){if(ORB.ready)return;ORB.ready=true;
     if(!it.s||!it.s.length)it.s=["signs"]});
   /* systems: rings of pictures, colour-ordered (bright colours by hue, then greys by lightness) */
   var U=64,GAP=78,sys=[];
-  SUBJ.forEach(function(sj){var list=items.filter(function(it){return !it.hide&&it.s[0]===sj[0]});if(!list.length)return;
+  /* one system per filter group (Brand, Product, Interior, Memories, Inspiration, For fun) */
+  CATS.forEach(function(sj){var list=items.filter(function(it){return !it.hide&&(it.g||"brand")===sj[0]});if(!list.length)return;
     list.sort(function(a,b){var ga=a.col.s<.18,gb=b.col.s<.18;if(ga!==gb)return ga?1:-1;return ga?a.col.l-b.col.l:a.col.h-b.col.h});
     var rings=[],k=0,left=list.slice();while(left.length){var rad=90+k*GAP,cap=Math.max(6,Math.floor(Math.PI*2*rad/(U*1.18)));rings.push({r:rad,its:left.splice(0,cap),w:(k%2?-1:1)*.05/(1+k*.35)});k++}
     sys.push({key:sj[0],name:sj[1],n:list.length,rings:rings,R:rings[rings.length-1].r+U})});
@@ -1051,11 +1052,13 @@ function orbPrep(){if(ORB.ready)return;ORB.ready=true;
 /* systems sit on an oval shaped like the screen, spaced by their size */
 function orbLayout(){var sys=ORB.sys,q=Math.max(.75,Math.min(2.2,(innerHeight-60)/innerWidth)),need=sys.reduce(function(a,s){return a+s.R*2+120},0),N=720,pts=[],L=0;
   for(var j=0;j<=N;j++){var t=j/N*Math.PI*2-Math.PI/2,px=Math.cos(t),py=Math.sin(t)*q;if(j){L+=Math.hypot(px-pts[j-1][0],py-pts[j-1][1])}pts.push([px,py,L])}
-  var A=need/L,pos=0,j2=0;sys.forEach(function(s){var at=(pos+s.R+60)/A;while(j2<N&&pts[j2+1][2]<at)j2++;s.x=pts[j2][0]*A;s.y=pts[j2][1]*A;pos+=s.R*2+120});ORB.q=q}
+  /* spread them round the oval; then grow the oval until every system clears the project names in the middle (HOLE) */
+  var A=need/L,HOLE=430;for(var it2=0;it2<6;it2++){var pos=0,j2=0,grow=1;sys.forEach(function(s){var at=(pos+s.R+60)*L/need;while(j2<N&&pts[j2+1][2]<at)j2++;s.x=pts[j2][0]*A;s.y=pts[j2][1]*A;pos+=s.R*2+120;
+      grow=Math.max(grow,(s.R+HOLE)/Math.hypot(s.x,s.y))});if(grow<=1.001)break;A*=grow}ORB.q=q}
 function orbSim(a,b){var inter=0;a.s.forEach(function(x){if(b.s.indexOf(x)>-1)inter++});var jac=inter/(a.s.length+b.s.length-inter||1);
   var wo=0;a.words.forEach(function(w){if(b.words.indexOf(w)>-1)wo++});
   var dc=Math.sqrt(Math.pow(a.col.r-b.col.r,2)+Math.pow(a.col.g-b.col.g,2)+Math.pow(a.col.b-b.col.b,2))/441;
-  return jac*1.2+(a.s[0]===b.s[0]?.6:0)+(a.p===b.p?.35:0)+(a.t.some(function(x){return b.t.indexOf(x)>-1})?.2:0)+(1-dc)*.8+Math.min(1,wo/2)*.6}
+  return jac*1.2+(a.s[0]===b.s[0]?.4:0)+(a.g===b.g?.5:0)+(a.p===b.p?.35:0)+(a.t.some(function(x){return b.t.indexOf(x)>-1})?.2:0)+(1-dc)*.8+Math.min(1,wo/2)*.6}
 function orbFit(){var x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;ORB.sys.forEach(function(s){x0=Math.min(x0,s.x-s.R);x1=Math.max(x1,s.x+s.R);y0=Math.min(y0,s.y-s.R);y1=Math.max(y1,s.y+s.R)});
   var W=innerWidth,H=innerHeight-60,hw=Math.max(-x0,x1),z=Math.min(W/(2*hw),H/(y1-y0))*.94;ORB.cam={x:0,y:(y0+y1)/2,z:z,tz:z,tx:0,ty:(y0+y1)/2}}
 function orbFocus(i,keep){ORB.focus=i;ORB.near=[];ORB.fg=null;document.body.classList.toggle("ofocus",i>=0);if(i>=0){var a=items[i];
@@ -1085,11 +1088,11 @@ function orbInfo(){var el2=document.getElementById("orbinfo");if(!el2)return;el2
   if(ORB.focus<0&&ORB.proj&&ORB.pjl){el2.appendChild(el("span","oc",nmOf(PROJ,ORB.proj)));el2.appendChild(el("span",null,ORB.pjl.n+" pictures"));
     var b0=el("button",null,"All projects");b0.type="button";b0.onclick=function(){orbPick(null)};el2.appendChild(b0);return}
   if(ORB.focus<0){el2.appendChild(el("span",null,"Tap a project or a picture"));return}
-  var it=items[ORB.focus],nm=SUBJ.filter(function(s){return it.s.indexOf(s[0])>-1}).map(function(s){return s[1]}).join(", ");
+  var it=items[ORB.focus],nm=nmOf(CATS,it.g||"brand");
   var pv=el("button",null,"←");pv.type="button";pv.setAttribute("aria-label","Previous picture");pv.onclick=function(){orbStep(-1)};el2.appendChild(pv);
   el2.appendChild(el("span","oc",it.c));el2.appendChild(el("span",null,nm));
   var nx=el("button",null,"→");nx.type="button";nx.setAttribute("aria-label","Next picture");nx.onclick=function(){orbStep(1)};el2.appendChild(nx);
-  var b=el("button",null,"All subjects");b.type="button";b.onclick=function(){orbFocus(-1)};el2.appendChild(b)}
+  var b=el("button",null,"All groups");b.type="button";b.onclick=function(){orbFocus(-1)};el2.appendChild(b)}
 /* projects in the middle: names sit at the centre of the oval; picking one pulls its pictures in around the names, each tied by a line to its subject */
 function orbPjBuild(){var c=ORB.pjEl;if(!c)return;c.innerHTML="";
   var a=el("button",null,"About");a.type="button";a.onclick=function(){orbAbout(true)};c.appendChild(a);
@@ -1407,7 +1410,7 @@ function edBase(it){if(!it.o0){it.o0={c:it.c,p:it.p,t:it.t.slice(),s:it.s.slice(
 function edWords(it){return (it.c+" "+(it.tags||"")).toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(function(w){return w.length>2&&!STOP[w]})}
 function nmOf(list,k){var o=list.find(function(x){return x[0]===k});return o?o[1]:k}
 /* lay one item's edits over its wall.json values; true when where it sits on the wall changes */
-function edApply(id){var it=IBY[id];if(!it)return false;var b=edBase(it),o=ED.ov[id]||{},key=function(){return [it.p,it.t.join(),it.hide?1:0,it.s.join()].join("|")},was=key();
+function edApply(id){var it=IBY[id];if(!it)return false;var b=edBase(it),o=ED.ov[id]||{},key=function(){return [it.p,it.t.join(),it.hide?1:0,it.s.join(),it.g].join("|")},was=key();
   it.c=o.c||b.c;it.p=o.p||b.p;it.t=o.t&&o.t.length?o.t.slice():b.t.slice();it.s=o.s&&o.s.length?o.s.slice():b.s.slice();it.hide=!!(o.hide||b.hide);
   EDK.forEach(function(k){it[k]=o[k]||b[k]||""});
   it.clones.forEach(function(e){var fc=e.querySelector(".fc");if(fc&&fc.textContent!==it.c)fc.textContent=it.c;if(e.getAttribute("role"))e.setAttribute("aria-label",it.c)});
