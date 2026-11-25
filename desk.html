@@ -331,6 +331,13 @@ function viewer(p,g,id){if(VW&&wins.indexOf(VW)>-1){front(VW);VW.show(p||VW.p,p?
 function cvLabel(x,cw,ch,t,X,Y,big,inv){x.font=(big?"700 14px ":"500 12px ")+"'Pixelify Sans',sans-serif";var tw=Math.ceil(x.measureText(t).width)+10,h=big?18:15;X=Math.round(Math.max(2,Math.min(cw-tw-2,X-tw/2)));Y=Math.round(Math.max(2,Math.min(ch-h-2,Y-h/2)));
   x.fillStyle=inv?"#fff":"#000";x.fillRect(X,Y,tw,h);x.strokeStyle=inv?"#000":"#fff";x.lineWidth=1;x.strokeRect(X+.5,Y+.5,tw-1,h-1);x.fillStyle=inv?"#000":"#fff";x.textBaseline="middle";x.fillText(t,X+5,Y+h/2+1)}
 function cvSize(cv,x,o){var r=cv.getBoundingClientRect(),W=Math.max(50,Math.round(r.width)),H=Math.max(50,Math.round(r.height)),d=OPT.colour?Math.min(2,window.devicePixelRatio||1):1;if(W===o.cw&&H===o.ch&&d===o.dpr)return false;o.cw=W;o.ch=H;o.dpr=d;cv.width=Math.round(W*d);cv.height=Math.round(H*d);x.setTransform(d,0,0,d,0,0);x.imageSmoothingEnabled=false;return true}
+/* sharper copies for pictures that are large on screen: the 480px one first, then the full picture. Only the last few dozen looked at are kept */
+var HI=[],HIB=0;
+function hiTex(it,px){var want=px>480&&!it.v?2:px>130?1:0,h=it._hi;if(h)h.u=performance.now();
+  if(want&&(!h||h.lv<want||h.col!==OPT.colour)&&!it._hq&&HIB<2){it._hq=1;HIB++;(want===2?full(it.id):thumb(it.id)).then(function(im){var col=OPT.colour,mx=want===2?(col?960:640):(col?480:300),k=Math.min(1,mx/Math.max(im.naturalWidth,im.naturalHeight)),W=Math.max(2,Math.round(im.naturalWidth*k)),H=Math.max(2,Math.round(im.naturalHeight*k)),c=document.createElement("canvas");
+      if(col){c.width=W;c.height=H;c.getContext("2d").drawImage(im,0,0,W,H)}else atkinson(im,c,W,H);if(!it._hi)HI.push(it);it._hi={c:c,lv:want,u:performance.now(),col:col};
+      if(HI.length>40){HI.sort(function(a,b){return a._hi.u-b._hi.u});HI.splice(0,10).forEach(function(o){o._hi=null})}},function(){}).then(function(){it._hq=0;HIB--})}
+  return want&&h&&h.col===OPT.colour?h.c:null}
 var VEIL=null;
 function fcOpen(it,q){var F={it:it,q:q,k:0,im:null,dc:null,dk:"",v:null,out:false};thumb(it.id).then(function(im){if(!F.im)F.im=im},function(){});
   if(it.v){var v=F.v=document.createElement("video");v.muted=true;v.loop=true;v.playsInline=true;v.setAttribute("playsinline","");v.setAttribute("muted","");v.src=it.v;
@@ -383,8 +390,9 @@ function orbit(){if(OB&&wins.indexOf(OB)>-1){front(OB);return}
       var u=Math.cos(a)*T.R,v=dz*T.R*S.tl,dp=dz*T.R/S.R,px=(S.x+u*S.c1-v*S.s1-cam.x)*z+cw/2+lx*dp,py=(S.y+u*S.s1+v*S.c1-cam.y)*z+ch/2+ly*dp,sz=T.s*z*(1+.36*dz);if(px<-sz||px>cw+sz||py<-sz||py>ch+sz)return;
       if(sz<6){var q=Math.max(1,Math.round(sz*.55));x.fillStyle="#fff";x.fillRect(Math.round(px-q/2),Math.round(py-q/2),q,q);return}
       var it=T.it,kk=sz/Math.max(it.w,it.h),tw=Math.max(2,Math.round(it.w*kk)),th=Math.max(2,Math.round(it.h*kk)),L=Math.round(px-tw/2),Tp=Math.round(py-th/2);T.q=[L,Tp,tw,th];
-      if(it._ob)x.drawImage(it._ob,L,Tp,tw,th);else{x.fillStyle="#000";x.fillRect(L,Tp,tw,th);x.strokeRect(L+.5,Tp+.5,tw-1,th-1);if(sz>=9&&asked<6){asked++;need(it)}}
-      if(sz>=20&&it._ob)x.strokeRect(L-.5,Tp-.5,tw+1,th+1);
+      var tex=(sz*O.dpr>130?hiTex(it,sz*O.dpr):null)||it._ob;
+      if(tex)x.drawImage(tex,L,Tp,tw,th);else{x.fillStyle="#000";x.fillRect(L,Tp,tw,th);x.strokeRect(L+.5,Tp+.5,tw-1,th-1);if(sz>=9&&asked<6){asked++;need(it)}}
+      if(sz>=20&&tex)x.strokeRect(L-.5,Tp-.5,tw+1,th+1);
       if(!F&&mouse&&mouse[0]>=L-2&&mouse[0]<=L+tw+2&&mouse[1]>=Tp-2&&mouse[1]<=Tp+th+2)hov=T})}
     pass(false);x.fillStyle="#fff";sys.forEach(function(S){if(!S.on)return;var X=Math.round(S.sx),Y=Math.round(S.sy);x.fillRect(X-1,Y-5,2,10);x.fillRect(X-5,Y-1,10,2);x.fillRect(X-2,Y-2,4,4)});pass(true);
     x.imageSmoothingEnabled=false;
@@ -450,7 +458,8 @@ function wallApp(){var vw=innerWidth,vh=innerHeight-barH(),W=Math.min(vw-(vw<640
     tiles.forEach(function(T){T.q=null;var it=T.it,key=T.w+"x"+T.h+(OPT.colour?"c":"k"),tex=it._wl&&it._wk===key?it._wl:null,seen=false;
       for(var i=Math.ceil((vl-T.x-T.w)/BW);T.x+i*BW<vr;i++)for(var j=Math.ceil((vt-T.y-T.h)/BH);T.y+j*BH<vb;j++){seen=true;
         var L=Math.round((T.x+i*BW-cam.x)*z+cw/2),Tp=Math.round((T.y+j*BH-cam.y)*z+ch/2),W2=Math.max(2,Math.round(T.w*z)),H2=Math.max(2,Math.round(T.h*z));
-        if(tex)x.drawImage(tex,L,Tp,W2,H2);else{x.fillStyle=PAT;x.fillRect(L,Tp,W2,H2)}x.strokeRect(L-.5,Tp-.5,W2+1,H2+1);
+        var px=Math.max(W2,H2)*O.dpr,hi=px>Math.max(T.w,T.h)*1.6?hiTex(it,px):null;
+        if(hi||tex)x.drawImage(hi||tex,L,Tp,W2,H2);else{x.fillStyle=PAT;x.fillRect(L,Tp,W2,H2)}x.strokeRect(L-.5,Tp-.5,W2+1,H2+1);
         if(it.v&&W2>40){x.fillStyle="#fff";x.fillRect(L+4,Tp+H2-18,16,14);x.fillStyle="#000";x.beginPath();x.moveTo(L+9,Tp+H2-15);x.lineTo(L+16,Tp+H2-11);x.lineTo(L+9,Tp+H2-7);x.fill()}
         if(!F&&mouse&&mouse[0]>=L&&mouse[0]<=L+W2&&mouse[1]>=Tp&&mouse[1]<=Tp+H2){hov=T;T.q=[L,Tp,W2,H2]}else if(!T.q)T.q=[L,Tp,W2,H2]}
       if(seen){if(tex)it._wu=fr;else if(asked<8){asked++;need(T)}}});
