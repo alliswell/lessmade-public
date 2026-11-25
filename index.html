@@ -322,7 +322,8 @@ body.editing .ed{display:flex}
 .edp h3 span{color:var(--bsoft)}
 .eda .lab{display:block;color:var(--bsoft);margin:6px 0 6px}.eda em,.edp label>span em{font-style:normal;text-transform:none;letter-spacing:0;margin-left:8px;opacity:.8}
 .abtl{list-style:none;margin:0 0 12px;padding:0}.abtl li{display:grid;grid-template-columns:7ch 14ch 1fr auto auto auto auto;gap:6px;align-items:center;padding:4px 0;border-top:1px solid var(--hl)}
-.abtl .ck{display:flex;gap:4px;align-items:center;margin:0;white-space:nowrap}.abtl button{min-width:28px}.eda button.arm{background:var(--red);border-color:var(--red);color:#fff}
+.abtl .ck{display:flex;gap:4px;align-items:center;margin:0;white-space:nowrap}.abtl button{min-width:28px}.edopts{list-style:none;margin:0 0 12px;padding:0}.edopts li{padding:8px 0;border-top:1px solid var(--hl)}.edopts .ck{display:flex;gap:10px;align-items:flex-start;margin:0}.edopts .ck span{display:flex;flex-direction:column;gap:2px}.edopts small{opacity:.7;text-transform:none;letter-spacing:0}
+.eda button.arm{background:var(--red);border-color:var(--red);color:#fff}
 @media (max-width:899px){.abtl li{grid-template-columns:7ch 1fr auto auto auto}.abtl li input[data-af=t]{grid-column:1/-1;order:9}.abtl .ck{order:10;grid-column:1/-1}}
 .edp label{display:block;margin:0 0 12px}.edp label>span{display:block;color:var(--bsoft);margin-bottom:4px}
 @media (min-width:900px) and (max-width:1279px){.ed .ty,.ed .in{display:none}}
@@ -392,8 +393,14 @@ var RM=matchMedia("(prefers-reduced-motion: reduce)").matches;
 var field=document.getElementById("field"),items=[],S={p:null,t:null,s:null,g:null},mouse={x:-1e4,y:-1e4};
 var cam={x:0,y:0,vx:0,vy:0},TW=2000,TH=2000;
 var SHARE_BASE="https://claude.ai/artifact/Au7HtSnnCnVYWk4PXxcVye";
-var OPTS={stories:true,moods:false,zoom:false,hand:true,desk:false,sound:false};
-try{var so=JSON.parse(localStorage.getItem("lm-wall-opts")||"null");if(so)for(var k0 in so)if(k0 in OPTS)OPTS[k0]=so[k0]}catch(e){}OPTS.desk=false;
+/* Options: the site's defaults (set in Edit mode > Options, saved in the database doc about/opts and baked into
+   wall.json "opts" for the live site), then whatever this visitor switched themselves (kept on their device only) */
+var OPTBASE={stories:false,moods:false,zoom:false,hand:false,sound:true},OPTJSON=null,OPTSITE=null,OPTOWN={};
+var OPTS={stories:false,moods:false,zoom:false,hand:false,desk:false,sound:true};
+try{OPTOWN=JSON.parse(localStorage.getItem("lm-wall-opts2")||"{}")||{}}catch(e){OPTOWN={}}
+function optSite(){return Object.assign({},OPTBASE,OPTJSON||{},OPTSITE||{})}
+function optCompute(){var b=Object.assign(optSite(),OPTOWN);Object.keys(OPTBASE).forEach(function(k){OPTS[k]=!!b[k]});OPTS.desk=false}
+optCompute();
 var STORIES=[["The garage",["bmw-01","bmw-04","bm-032","bm-007","bmw-02","bmw-03","bm-013","bmw-05"]],["Wall to wear",["bm-010","bm-044","bm-015","bm-022","bm-023","bm-042","bm-038","bm-050"]],
   ["Coffee",["bm-019","bm-043","bm-036","bm-046","bm-053","bm-052","bm-005"]],["Out riding",["bm-012","bm-014","bm-035","bm-039","bm-040","bm-041","bm-045","bmw-07","bmw-06"]],
   ["Six years",["bm-051","bm-006","bm-020","bm-037","bm-058","bmw-08","bm-048"]]];
@@ -910,7 +917,7 @@ var OPTDEF=[["stories","Stories","A row of short picture stories that play like 
 function opts(){var box=document.getElementById("optlist");box.innerHTML="";
   OPTDEF.forEach(function(o){var b=el("button","opt");b.type="button";b.setAttribute("role","switch");b.setAttribute("aria-checked",!!OPTS[o[0]]);
     var l=el("span",null,o[1]);l.appendChild(el("small",null,o[2]));b.appendChild(l);b.appendChild(el("b",null,OPTS[o[0]]?"On":"Off"));
-    b.onclick=function(){OPTS[o[0]]=!OPTS[o[0]];try{localStorage.setItem("lm-wall-opts",JSON.stringify(OPTS))}catch(e){}opts();dock();layout();sfx("pick")};box.appendChild(b)});
+    b.onclick=function(){var k=o[0],v=!OPTS[k];if(v===!!optSite()[k])delete OPTOWN[k];else OPTOWN[k]=v;try{localStorage.setItem("lm-wall-opts2",JSON.stringify(OPTOWN))}catch(e){}optCompute();opts();dock();layout();sfx("pick")};box.appendChild(b)});
   document.body.classList.toggle("nocut",!OPTS.hand);deskMode()}
 function openSheet(w){closeSheets(true);var sh=document.getElementById(w==="pk"?"pksheet":"optsheet");if(w==="pk")fillTray();sh.classList.add("on");document.getElementById("shade").classList.add("on");
   document.getElementById("optbtn").setAttribute("aria-expanded",w!=="pk")}
@@ -1470,7 +1477,9 @@ function edInit(){items.forEach(function(it){IBY[it.id]=it;edBase(it);EDK.forEac
       if(firstI&&!s.metadata.fromCache){firstI=false;Object.keys(ED.ov).forEach(function(id){if(!ED.dirty["i:"+id]&&!s.docs.some(function(d){return d.id===id})){delete ED.ov[id];if(edApply(id))st=true}})}
       s.docChanges().forEach(function(ch){var id=ch.doc.id;if(ED.dirty["i:"+id])return;if(ch.type==="removed")delete ED.ov[id];else ED.ov[id]=JSON.parse(JSON.stringify(ch.doc.data()||{}));if(edApply(id))st=true});edAfter(st)},function(){});
     db.collection("projects").onSnapshot(function(s){s.docChanges().forEach(function(ch){var k=ch.doc.id;if(ED.dirty["p:"+k])return;if(ch.type==="removed")delete ED.pj[k];else ED.pj[k]=Object.assign({},ch.doc.data())});pjApply();edAfter(false);if(ED.on&&ED.tab==="proj")edProj()},function(){});
-    db.collection("about").onSnapshot(function(s){if(ED.dirty["a:main"])return;var d=s.docs.find(function(x){return x.id==="main"});ED.ab=d?abNorm(d.data()):null;abApply();edAfter(false);if(ED.on&&ED.tab==="about")edAbout()},function(){});
+    db.collection("about").onSnapshot(function(s){if(!ED.dirty["o:site"]){var od=s.docs.find(function(x){return x.id==="opts"});var nv=od?Object.assign({},od.data()):null;
+        if(JSON.stringify(nv)!==JSON.stringify(OPTSITE)){OPTSITE=nv;optCompute();if(READY){opts();dock();layout()}if(ED.on&&ED.tab==="opts")edOpts()}}
+      if(ED.dirty["a:main"])return;var d=s.docs.find(function(x){return x.id==="main"});ED.ab=d?abNorm(d.data()):null;abApply();edAfter(false);if(ED.on&&ED.tab==="about")edAbout()},function(){});
     return claude.use("user")}).then(function(u){if(!u)return false;return u.canEdit()}).then(function(can){if(!can||!ED.db)return;ED.can=true;var b=document.getElementById("edbtn");b.hidden=false;
     ED.db.collection("notes").onSnapshot(function(s){s.docChanges().forEach(function(ch){var id=ch.doc.id;if(ED.dirty["n:"+id])return;if(ch.type==="removed")delete ED.notes[id];else ED.notes[id]=(ch.doc.data()||{}).n||""});if((ED.on||ED.quick)&&ED.cur)edFill(true)},function(){})}).catch(function(){})}
 
@@ -1484,11 +1493,20 @@ function edOpen(){if(!ED.can)return;edUI();ED.on=true;if(bigI>=0)closeBig(true);
   document.body.classList.add("editing");if(!ORB.ready)orbPrep();edTab(ED.tab);setTimeout(function(){ED.ui.q.focus()},30)}
 function edClose(){ED.on=false;document.body.classList.remove("editing");ED.ui.root.classList.remove("det");var b=document.getElementById("edbtn");if(b)b.focus();kick()}
 function edTab(t){ED.tab=t;var u=ED.ui;[].forEach.call(u.tabs.children,function(b){b.setAttribute("aria-pressed",b.dataset.t===t)});
-  u.f.hidden=u.m.hidden=t!=="pics";u.p.hidden=t!=="proj";u.a.hidden=t!=="about";if(t==="pics")edRender();else if(t==="about")edAbout();else edProj()}
+  u.f.hidden=u.m.hidden=t!=="pics";u.p.hidden=t!=="proj";u.a.hidden=t!=="about";u.o.hidden=t!=="opts";if(t==="pics")edRender();else if(t==="about")edAbout();else if(t==="opts")edOpts();else edProj()}
+/* Options tab: what every visitor starts with. They can still switch them in Options; that stays on their own device. */
+function edOpts(){var p=ED.ui.o,S0=optSite(),own=Object.keys(OPTOWN).filter(function(k){return k in OPTBASE});
+  p.innerHTML="<section><h3>Options<span>What every visitor starts with</span></h3><div class='lab'>On by default<em>Visitors can still switch these in Options; their choice stays on their own device</em></div><ul class='edopts'>"+
+    OPTDEF.map(function(o){return "<li><label class='ck'><input type='checkbox' data-of='"+o[0]+"'"+(S0[o[0]]?" checked":"")+"><span><b>"+esc(o[1])+"</b><small>"+esc(o[2])+"</small></span></label></li>"}).join("")+"</ul>"+
+    (own.length?"<p class='lab'>On this device you've switched "+own.map(function(k){return esc((OPTDEF.find(function(o){return o[0]===k})||[k,k])[1])}).join(", ")+" yourself, so you see your choice there, not the default. <button type='button' data-ob='mine'>Use the defaults here</button></p>":"")+"</section>";
+  p.onchange=function(e){var k=e.target.dataset.of;if(!k)return;var o=optSite();o[k]=e.target.checked;
+    var cur={};Object.keys(OPTBASE).forEach(function(x){cur[x]=!!o[x]});OPTSITE=cur;optCompute();opts();dock();layout();edAfter(false);
+    if(ED.db)edWrite("about/opts",function(){return OPTSITE?JSON.parse(JSON.stringify(OPTSITE)):null},"o:site");edOpts()};
+  p.onclick=function(e){var b=e.target.closest("[data-ob]");if(!b)return;OPTOWN={};try{localStorage.removeItem("lm-wall-opts2")}catch(_){}optCompute();opts();dock();layout();edOpts()}}
 function opt(v,t,sel){return "<option value='"+esc(v)+"'"+(sel?" selected":"")+">"+esc(t)+"</option>"}
 function edUI(){if(ED.ui)return;var r=el("section","ed");r.id="ed";r.setAttribute("role","dialog");r.setAttribute("aria-modal","true");r.setAttribute("aria-label","Edit pictures");
   var pOpts=PROJ.map(function(x){return opt(x[0],x[1])}).join(""),tOpts=TYPES.map(function(x){return opt(x[0],x[1])}).join(""),sOpts=SUBJ.map(function(x){return opt(x[0],x[1])}).join("");
-  r.innerHTML="<header class='edh'><b>Edit</b><span class='n' data-r='n'></span><nav class='tabs'><button type='button' data-t='pics'>Pictures</button><button type='button' data-t='proj'>Projects</button><button type='button' data-t='about'>About</button></nav>"+
+  r.innerHTML="<header class='edh'><b>Edit</b><span class='n' data-r='n'></span><nav class='tabs'><button type='button' data-t='pics'>Pictures</button><button type='button' data-t='proj'>Projects</button><button type='button' data-t='about'>About</button><button type='button' data-t='opts'>Options</button></nav>"+
     "<input type='search' data-r='q' placeholder='Search captions, descriptions, tags, IDs, files' aria-label='Search'><span class='sv' data-r='sv' role='status'>Saved</span><button type='button' class='qall' data-r='qa'>All pictures</button><button type='button' data-r='x'>Close</button></header>"+
     "<div class='edf' data-r='f'><label>Project<select data-f='fp'>"+opt("","All")+pOpts+"</select></label><label>Type<select data-f='ft'>"+opt("","All")+tOpts+"</select></label>"+
     "<label>Subject<select data-f='fs'>"+opt("","All")+sOpts+"</select></label><label>Show<select data-f='fh'>"+opt("","All")+opt("shown","On the wall")+opt("hidden","Hidden")+opt("nodesc","No description")+opt("edited","Edited")+opt("video","Videos")+"</select></label>"+
@@ -1498,7 +1516,7 @@ function edUI(){if(ED.ui)return;var r=el("section","ed");r.id="ed";r.setAttribut
     "<label>Add subject<select data-b='s+'>"+opt("","—")+sOpts+"</select></label><label>Remove subject<select data-b='s-'>"+opt("","—")+sOpts+"</select></label>"+
     "<label>Add type<select data-b='t+'>"+opt("","—")+tOpts+"</select></label><label>Remove type<select data-b='t-'>"+opt("","—")+tOpts+"</select></label>"+
     "<button type='button' data-b='hide'>Hide</button><button type='button' data-b='show'>Show</button><button type='button' data-b='clear'>Clear selection</button></div>"+
-    "<div class='edp' data-r='p' hidden></div><div class='edp eda' data-r='a' hidden></div>";
+    "<div class='edp' data-r='p' hidden></div><div class='edp eda' data-r='a' hidden></div><div class='edp eda' data-r='o' hidden></div>";
   document.body.appendChild(r);var u={root:r};r.querySelectorAll("[data-r]").forEach(function(e){u[e.dataset.r]=e});u.tabs=r.querySelector(".tabs");ED.ui=u;
   /* the wall listens for keys and the wheel on the window; keep the editor's to itself */
   ["keydown","wheel"].forEach(function(t){r.addEventListener(t,function(e){e.stopPropagation()})});
@@ -1643,7 +1661,7 @@ function edAbout(){var p=ED.ui.a,A=abCur();if(document.activeElement&&p.contains
 document.getElementById("edbtn").onclick=edOpen;
 
 fetch("wall.json",{cache:"no-cache"}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(d){
-  if(d.about){ABOUT0=abNorm(d.about);abApply()}(d.items||[]).forEach(function(x){if(x.b)BLR[x.id]=x.b});
+  if(d.about){ABOUT0=abNorm(d.about);abApply()}if(d.opts){OPTJSON=d.opts;optCompute()}(d.items||[]).forEach(function(x){if(x.b)BLR[x.id]=x.b});
   PACKS=(d.packs||[]).map(function(p){return typeof p==="string"?null:p}).filter(Boolean);PACKS.forEach(function(p,k){p.ids.forEach(function(id){PKOF[id]=k})});
   (d.full||[]).forEach(function(p){var o=0;p.ids.forEach(function(id,j){FOF[id]={p:p,o:o,n:p.len[j]};o+=p.len[j]})});
   (d.items||[]).forEach(function(x){RAW[x.id]=x});build(d.items);edInit();if(location.hash.indexOf("#picks-")===0)intro();else orbToggle(true);READY=true;requestAnimationFrame(function(){pump();vscan()})}).catch(function(){if(items.length)return;var m=el("p","oops","The wall didn't load. Reload the page to try again.");document.body.appendChild(m)});
