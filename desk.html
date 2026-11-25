@@ -308,7 +308,8 @@ function music(auto){var vw=innerWidth,vh=innerHeight-barH();var w=win("music","
   function loop(){cancelAnimationFrame(raf);var last=0;(function f(t){raf=requestAnimationFrame(f);if(t-last<80)return;last=t;paint()})(0)}
   function load(i,go){cur=(i+TRK.length)%TRK.length;var t=TRK[cur];a.src=t.f;ti.textContent=t.n;ol.querySelectorAll("button").forEach(function(b,j){b.setAttribute("aria-current",j===cur)});paint();if(go)go===2?first():a.play().catch(function(){})}
   /* browsers will not start sound until the visitor has touched the page, so if the first try is refused, the first click or key starts it */
-  function first(){var p=a.play();if(!p||!p.catch)return;p.catch(function(){if(wins.indexOf(w)<0)return;wait=true;paint();
+  function first(){try{a.volume=0}catch(_){}a.addEventListener("playing",function(){var t0=performance.now(),iv=setInterval(function(){var k=Math.min(1,(performance.now()-t0)/5000);try{a.volume=k*k}catch(_){}if(k>=1)clearInterval(iv)},50)},{once:true});
+    var p=a.play();if(!p||!p.catch)return;p.catch(function(){if(wins.indexOf(w)<0)return;wait=true;paint();
       function f(e){removeEventListener("pointerdown",f,true);removeEventListener("keydown",f,true);if(!wait)return;wait=false;if(wins.indexOf(w)<0)return;if(e.target.closest&&e.target.closest(".mu")){paint();return}a.play().catch(function(){paint()})}
       addEventListener("pointerdown",f,true);addEventListener("keydown",f,true)})}
   a.addEventListener("play",function(){wait=false;pp.textContent="Pause";loop()});a.addEventListener("pause",function(){pp.textContent="Play";cancelAnimationFrame(raf);paint()});
