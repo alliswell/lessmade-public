@@ -84,9 +84,13 @@ canvas,img{image-rendering:pixelated}
 .sl.end{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;text-align:center;padding:16px}
 .sl.end button,.ctl button{border:2px solid var(--k);padding:5px 16px;border-radius:8px;font-weight:700;box-shadow:2px 2px 0 var(--k);background:var(--w)}
 .sl.end button:active,.ctl button:active{background:var(--k);color:var(--w);box-shadow:none;transform:translate(2px,2px)}
-.sc{flex:none;height:16px;border-top:2px solid var(--k);position:relative;background:var(--lite);touch-action:none;cursor:ew-resize}
-.sc i{position:absolute;top:0;bottom:0;left:0;background:var(--k);min-width:6px}
-.vc{flex:none;height:5.8em;overflow:auto;border-top:2px solid var(--k);padding:6px 10px 8px;-webkit-user-select:text;user-select:text}
+.vc{flex:none;height:4.6em;overflow:auto;border-top:2px solid var(--k);padding:5px 10px 6px;-webkit-user-select:text;user-select:text}
+/* the strip of small pictures along the bottom: the one in front wears a thick frame */
+.fs{flex:none;display:flex;align-items:center;gap:5px;height:64px;padding:0 20px 0 6px;border-top:2px solid var(--k);overflow-x:auto;overflow-y:hidden;scrollbar-width:none;background:var(--lite)}.fs::-webkit-scrollbar{display:none}
+.fs button{flex:none;height:48px;position:relative;border:1px solid var(--k);background:var(--w);overflow:hidden}
+.fs button img,.fs button canvas{display:block;width:100%;height:100%;object-fit:cover;image-rendering:auto}.fs button canvas{image-rendering:pixelated}
+.fs button i{position:absolute;left:2px;bottom:2px;font-style:normal;font-size:10px;line-height:1;background:var(--w);border:1px solid var(--k);padding:1px 2px}
+.fs button[aria-current=true]{border:0;box-shadow:0 0 0 2px var(--w),0 0 0 5px var(--k);height:44px;margin:0 6px}
 .vc b{font-weight:700;display:block}.vc p{margin:4px 0 0;max-width:60ch}
 /* music */
 .mu .now{display:flex;justify-content:space-between;gap:10px;padding:6px 8px 4px;white-space:nowrap}.mu .now b{font-weight:700;overflow:hidden;text-overflow:ellipsis}
@@ -242,9 +246,11 @@ function vList(p,g){var l=D.items.filter(function(it){return it.p===p&&(g?it.g==
 function viewer(p,g,id){if(VW&&wins.indexOf(VW)>-1){front(VW);VW.show(p||VW.p,p?g||"":VW.g,id);return}
   var vw=innerWidth,vh=innerHeight-barH(),W=Math.min(vw-(vw<640?8:24),940);
   var w=win("viewer","Viewer",{w:W,h:vh-16,x:Math.max(4,(vw-W)/2),y:6,full:true,exact:true});if(!w)return;VW=w;
-  var tabs=el("div","tabs"),sw=el("div","sw"),sc=el("div","sc"),bar=el("i"),vc=el("div","vc"),cnt=el("span","cnt"),chips=el("span","chips"),nav=el("span"),pb=el("button",null,"←"),nb=el("button",null,"→");
-  var list=[],slides=[],idx=-1,live=null,projs=[],raf=0,aR=0,aim=0;
-  tabs.setAttribute("role","tablist");tabs.setAttribute("aria-label","Projects");w.el.insertBefore(tabs,w.st);w.bd.classList.add("vb");sc.appendChild(bar);sc.setAttribute("aria-hidden","true");w.bd.appendChild(sw);w.bd.appendChild(sc);w.bd.appendChild(vc);
+  var tabs=el("div","tabs"),sw=el("div","sw"),fs=el("div","fs"),vc=el("div","vc"),cnt=el("span","cnt"),chips=el("span","chips"),nav=el("span"),pb=el("button",null,"←"),nb=el("button",null,"→");
+  var list=[],slides=[],ths=[],idx=-1,live=null,projs=[],raf=0,aR=0,aim=0,dragged=false,fresh=true;
+  var tio=new IntersectionObserver(function(es){es.forEach(function(e){if(!e.isIntersecting)return;tio.unobserve(e.target);var b=e.target,it=b._it;
+      thumb(it.id).then(function(im){if(!b.isConnected)return;var n;if(OPT.colour){n=el("img");n.src=im.src;n.alt=""}else{n=el("canvas");atkinson(im,n,b.offsetWidth||48,48)}b.insertBefore(n,b.firstChild)},function(){})})},{root:fs,rootMargin:"0px 500px"});
+  tabs.setAttribute("role","tablist");tabs.setAttribute("aria-label","Projects");w.el.insertBefore(tabs,w.st);w.bd.classList.add("vb");fs.setAttribute("aria-label","Pictures in this project");w.bd.appendChild(sw);w.bd.appendChild(vc);w.bd.appendChild(fs);
   pb.type=nb.type="button";pb.setAttribute("aria-label","Previous");nb.setAttribute("aria-label","Next");nav.appendChild(pb);nav.appendChild(nb);w.st.appendChild(cnt);w.st.appendChild(chips);w.st.appendChild(nav);vc.setAttribute("aria-live","polite");
   function box(it){var bw=sw.clientWidth-18,bh=sw.clientHeight-18,k=Math.min(bw/it.w,bh/it.h,1.5);return [Math.max(1,Math.round(it.w*k)),Math.max(1,Math.round(it.h*k))]}
   function draw(s){var it=s._it,wh=box(it),k=wh[0]+"x"+wh[1]+(OPT.colour?"c":"k");if(s._k===k)return;s._k=k;s.textContent="";s._src=null;
@@ -253,14 +259,16 @@ function viewer(p,g,id){if(VW&&wins.indexOf(VW)>-1){front(VW);VW.show(p||VW.p,p?
     thumb(it.id).then(function(im){if(!s._src)put(im)},function(){});if(!it.v)full(it.id).then(put,function(){})}
   /* a film plays only while it is the one in front */
   function play(s){var it=s._it,v=document.createElement("video"),L={s:s,v:v,r:0};v.muted=true;v.loop=true;v.playsInline=true;v.setAttribute("playsinline","");v.setAttribute("muted","");live=L;
-    if(OPT.colour){v.src=it.v;v.style.width=s._n.style.width;v.style.height=s._n.style.height;v.addEventListener("playing",function(){if(live===L&&s._n.parentNode===s)s.replaceChild(v,s._n)},{once:true})}
+    if(OPT.colour){v.src=it.v;if(it.vs&&it.vs!==it.v)v.addEventListener("error",function(){if(live===L&&!L.alt){L.alt=1;v.src=it.vs;var p=v.play();if(p&&p.catch)p.catch(function(){})}});v.style.width=s._n.style.width;v.style.height=s._n.style.height;v.addEventListener("playing",function(){if(live===L&&s._n.parentNode===s)s.replaceChild(v,s._n)},{once:true})}
     else{v.src=it.vs||it.v;var cv=s._n,fw=Math.min(cv.width,360),fh=Math.round(fw*it.h/it.w),last=0;(function tick(t){L.r=requestAnimationFrame(tick);if(t-last<66||v.readyState<2)return;last=t;bayer(v,cv,fw,fh)})(0)}
     var pr=v.play();if(pr&&pr.catch)pr.catch(function(){})}
   function stop(){if(!live)return;var L=live;live=null;cancelAnimationFrame(L.r);L.v.pause();L.v.removeAttribute("src");L.v.load();L.s._k="";if(L.s.parentNode)draw(L.s)}
   function sync(){var cw=sw.clientWidth||1,i=Math.max(0,Math.min(slides.length-1,Math.round(sw.scrollLeft/cw)));
     for(var j=i-1;j<=i+2;j++)if(slides[j]&&slides[j]._it)draw(slides[j]);
     if(i===idx)return;stop();idx=i;slides.forEach(function(s,j){if(Math.abs(j-i)>3&&s._k){s._k="";s.textContent=""}});
-    var it=list[i];cnt.textContent=it?(i+1)+" of "+list.length:"The end";bar.style.width=(it?(i+1)/list.length*100:100)+"%";vc.textContent="";
+    var it=list[i];cnt.textContent=it?(i+1)+" of "+list.length:"The end";vc.textContent="";
+    ths.forEach(function(b,j){if(j===i)b.setAttribute("aria-current","true");else if(b.hasAttribute("aria-current"))b.removeAttribute("aria-current")});
+    var tb=ths[Math.min(i,ths.length-1)];if(tb)fs.scrollTo({left:tb.offsetLeft-fs.offsetLeft-(fs.clientWidth-tb.offsetWidth)/2,behavior:CALM||fresh?"auto":"smooth"});fresh=false;
     if(it){vc.appendChild(el("b",null,it.c));vc.appendChild(el("span",null,[nm(GRP,it.g),it.yr,it.place,it.v?"Film":""].filter(Boolean).join(" · ")));if(it.d)vc.appendChild(el("p",null,it.d));if(it.v)play(slides[i])}
     pb.disabled=i===0;nb.disabled=i===slides.length-1}
   /* turning the page is timed here rather than left to the browser, so it always lands; snapping is off while it runs */
@@ -276,20 +284,23 @@ function viewer(p,g,id){if(VW&&wins.indexOf(VW)>-1){front(VW);VW.show(p||VW.p,p?
     sw.textContent="";slides=list.map(function(it){var s=el("div","sl");s._it=it;sw.appendChild(s);return s});
     var nx=projs[(projs.findIndex(function(x){return x[0]===p})+1)%projs.length],e=el("div","sl end"),eb=el("button",null,(g?"All of "+nm(PROJ,p):"Next: "+nx[1])+" →");eb.type="button";
     e.appendChild(el("div",null,"That is all of "+nm(PROJ,p)+(g?" : "+nm(GRP,g):"")+"."));e.appendChild(eb);eb.onclick=function(){if(g)w.show(p,"");else w.show(nx[0],"")};sw.appendChild(e);slides.push(e);
+    tio.disconnect();fs.textContent="";fresh=true;ths=list.map(function(it,j){var b=el("button");b.type="button";b._it=it;b.style.width=Math.max(30,Math.min(96,Math.round(48*it.w/it.h)))+"px";b.setAttribute("aria-label",it.c);b.title=it.c;if(it.v)b.appendChild(el("i",null,"▶"));
+      b.onclick=function(){goTo(j,Math.abs(j-at())<4)};fs.appendChild(b);tio.observe(b);return b});
     idx=-1;var i=id?list.findIndex(function(it){return it.id===id}):0;sw.scrollLeft=Math.max(0,i)*sw.clientWidth;sync()};
   sw.addEventListener("scroll",function(){if(raf)return;raf=requestAnimationFrame(function(){raf=0;idle();sync()})},{passive:true});
   /* a mouse cannot swipe, so let it drag; a quick flick or a quarter of the way across turns the page */
-  sw.addEventListener("pointerdown",function(e){if(e.pointerType!=="mouse"||e.button||e.target.closest("button"))return;halt();var x0=e.clientX,s0=sw.scrollLeft,t0=performance.now();sw.setPointerCapture(e.pointerId);sw.classList.add("drg");
+  sw.addEventListener("pointerdown",function(e){if(e.pointerType!=="mouse"||e.button||e.target.closest("button"))return;halt();dragged=false;var x0=e.clientX,s0=sw.scrollLeft,t0=performance.now();sw.setPointerCapture(e.pointerId);sw.classList.add("drg");
     function mv(ev){sw.scrollLeft=s0-(ev.clientX-x0)}
-    function up(ev){sw.removeEventListener("pointermove",mv);sw.removeEventListener("pointerup",up);sw.removeEventListener("pointercancel",up);var dx=ev.clientX-x0,cw=sw.clientWidth,t=Math.round(s0/cw);
+    function up(ev){sw.removeEventListener("pointermove",mv);sw.removeEventListener("pointerup",up);sw.removeEventListener("pointercancel",up);var dx=ev.clientX-x0,cw=sw.clientWidth,t=Math.round(s0/cw);dragged=Math.abs(dx)>5;
       if(Math.abs(dx)>cw*.25||(Math.abs(dx)>30&&performance.now()-t0<350))t+=dx<0?1:-1;goTo(t,true)}
     sw.addEventListener("pointermove",mv);sw.addEventListener("pointerup",up);sw.addEventListener("pointercancel",up)});
   sw.addEventListener("touchstart",halt,{passive:true});sw.addEventListener("wheel",function(){if(aR)halt()},{passive:true});
-  sc.addEventListener("pointerdown",function(e){sc.setPointerCapture(e.pointerId);function jump(ev){var r=sc.getBoundingClientRect();goTo(Math.max(0,Math.min(list.length-1,Math.floor((ev.clientX-r.left)/r.width*list.length))),false)}
-    function up(){sc.removeEventListener("pointermove",jump);sc.removeEventListener("pointerup",up);sc.removeEventListener("pointercancel",up)}jump(e);sc.addEventListener("pointermove",jump);sc.addEventListener("pointerup",up);sc.addEventListener("pointercancel",up)});
+  /* a click on the left or right third of the picture turns the page, as a tap does in a phone's stories */
+  sw.addEventListener("click",function(e){if(dragged||e.target.closest("button"))return;var r=sw.getBoundingClientRect(),f=(e.clientX-r.left)/r.width;if(f<.33)goTo(at()-1,true);else if(f>.67)goTo(at()+1,true)});
+  fs.addEventListener("wheel",function(e){if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){fs.scrollLeft+=e.deltaY;e.preventDefault()}},{passive:false});
   pb.onclick=function(){goTo(at()-1,true)};nb.onclick=function(){goTo(at()+1,true)};w.step=function(d){goTo(at()+d,true)};
   var ro=new ResizeObserver(function(){if(idx<0)return;sw.scrollLeft=idx*sw.clientWidth;sync()});ro.observe(sw);
-  w.redraw=function(){var it=list[idx];w.show(w.p,w.g,it&&it.id)};w.onclose=function(){halt();stop();ro.disconnect();VW=null};
+  w.redraw=function(){var it=list[idx];w.show(w.p,w.g,it&&it.id)};w.onclose=function(){halt();stop();ro.disconnect();tio.disconnect();VW=null};
   w.show(p||PROJ[0][0],g,id)}
 
 /* ---- Music: a short list of tracks, each with its waveform drawn in bars ---- */
