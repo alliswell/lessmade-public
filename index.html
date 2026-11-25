@@ -1696,5 +1696,7 @@ fetch("wall.json",{cache:"no-cache"}).then(function(r){if(!r.ok)throw 0;return r
   if(d.about){ABOUT0=abNorm(d.about);abApply()}if(d.opts){OPTJSON=d.opts;optCompute()}(d.items||[]).forEach(function(x){if(x.b)BLR[x.id]=x.b});
   PACKS=(d.packs||[]).map(function(p){return typeof p==="string"?null:p}).filter(Boolean);PACKS.forEach(function(p,k){p.ids.forEach(function(id){PKOF[id]=k})});
   (d.full||[]).forEach(function(p){var o=0;p.ids.forEach(function(id,j){FOF[id]={p:p,o:o,n:p.len[j]};o+=p.len[j]})});
-  (d.items||[]).forEach(function(x){RAW[x.id]=x});build(d.items);edInit();if(location.hash.indexOf("#picks-")===0)intro();else orbToggle(true);READY=true;requestAnimationFrame(function(){pump();vscan()})}).catch(function(){if(items.length)return;var m=el("p","oops","The wall didn't load. Reload the page to try again.");document.body.appendChild(m)});
+  (d.items||[]).forEach(function(x){RAW[x.id]=x});build(d.items);edInit();if(location.hash.indexOf("#picks-")===0)intro();else orbToggle(true);READY=true;
+  /* #wall, #scroll, #orbit or #about in the address opens on that view (the Desk's File menu links here) */
+  (function(){var h=location.hash.slice(1);if(h==="wall"||h==="scroll")setTimeout(function(){setView(h)},0);else if(h==="about")setTimeout(function(){orbAbout(true)},0)})();requestAnimationFrame(function(){pump();vscan()})}).catch(function(){if(items.length)return;var m=el("p","oops","The wall didn't load. Reload the page to try again.");document.body.appendChild(m)});
 </script>
