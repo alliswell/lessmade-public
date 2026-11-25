@@ -81,6 +81,27 @@ canvas,img{image-rendering:pixelated}
 .ob{flex:1;min-height:0;width:100%;display:block;background:var(--k);cursor:crosshair;touch-action:none;image-rendering:auto}
 .st .rd{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .ob.pk{cursor:var(--zin,zoom-in)}.ob.fo{cursor:var(--zout,zoom-out)}.ob.wc{background:var(--k);cursor:grab}.ob.wc.pk{cursor:var(--zin,zoom-in)}.ob.wc.fo{cursor:var(--zout,zoom-out)}
+.sw{flex:1;min-height:0;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;cursor:grab;background:var(--dark);touch-action:pan-x}
+.sw.drg{scroll-snap-type:none;cursor:grabbing}
+.sw.onpic{cursor:var(--zin,zoom-in)}
+.sw.zm{overflow-x:hidden;scroll-snap-type:none;cursor:var(--zout,zoom-out);touch-action:none}
+.sl{flex:0 0 100%;min-width:0;height:100%;scroll-snap-align:center;scroll-snap-stop:always;display:grid;place-items:center;overflow:hidden}
+.sl img,.sl video{display:block;image-rendering:auto;border:1px solid var(--w);background:var(--w);will-change:transform;-webkit-user-drag:none;pointer-events:none;object-fit:contain}
+.sl canvas{display:block;border:1px solid var(--w);will-change:transform}
+.sl.end div{background:var(--k);padding:3px 10px}
+.sl.end{color:var(--w);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;text-align:center;padding:16px}
+.sl.end button,.ctl button{border:2px solid var(--k);padding:5px 16px;border-radius:8px;font-weight:700;box-shadow:2px 2px 0 var(--k);background:var(--w);color:var(--k)}
+.sl.end button{box-shadow:0 0 0 2px var(--k),0 0 0 4px var(--w)}
+.sl.end button:active,.ctl button:active{background:var(--k);color:var(--w);box-shadow:none;transform:translate(2px,2px)}
+.vc{flex:none;height:4.6em;overflow:auto;border-top:2px solid var(--k);padding:5px 10px 6px;-webkit-user-select:text;user-select:text}
+/* the strip of small pictures along the bottom: the one in front wears a thick frame */
+.fs{flex:none;display:flex;align-items:center;gap:6px;--th:72px;height:calc(var(--th) + 20px);padding:0 20px 0 8px;border-top:2px solid var(--k);overflow-x:auto;overflow-y:hidden;scrollbar-width:none;background:var(--lite)}.fs::-webkit-scrollbar{display:none}
+.fs button{flex:none;height:var(--th);position:relative;border:1px solid var(--k);background:var(--w);overflow:hidden}
+.fs button img,.fs button canvas{display:block;width:100%;height:100%;object-fit:cover;image-rendering:auto}.fs button canvas{image-rendering:pixelated}
+.fs button i{position:absolute;left:2px;bottom:2px;font-style:normal;font-size:10px;line-height:1;background:var(--w);border:1px solid var(--k);padding:1px 2px}
+.fs button[aria-current=true]{border:0;box-shadow:0 0 0 2px var(--w),0 0 0 6px var(--k);height:calc(var(--th) - 6px);margin:0 7px}
+@media (max-width:639px){.fs{--th:56px}}
+.vc b{font-weight:700;display:block}.vc p{margin:4px 0 0;max-width:60ch}
 /* music */
 .mu .now{display:flex;justify-content:space-between;gap:10px;padding:6px 8px 4px;white-space:nowrap}.mu .now b{font-weight:700;overflow:hidden;text-overflow:ellipsis}
 .mu canvas{display:block;width:320px;max-width:100%;height:auto;margin:0 auto;border-top:1px solid var(--k);border-bottom:1px solid var(--k);touch-action:none;cursor:ew-resize}
