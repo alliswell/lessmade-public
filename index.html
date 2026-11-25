@@ -322,7 +322,7 @@ body.editing .ed{display:flex}
 .edp h3 span{color:var(--bsoft)}
 .eda .lab{display:block;color:var(--bsoft);margin:6px 0 6px}.eda em,.edp label>span em{font-style:normal;text-transform:none;letter-spacing:0;margin-left:8px;opacity:.8}
 .abtl{list-style:none;margin:0 0 12px;padding:0}.abtl li{display:grid;grid-template-columns:7ch 14ch 1fr auto auto auto auto;gap:6px;align-items:center;padding:4px 0;border-top:1px solid var(--hl)}
-.abtl .ck{display:flex;gap:4px;align-items:center;margin:0;white-space:nowrap}.abtl button{min-width:28px}
+.abtl .ck{display:flex;gap:4px;align-items:center;margin:0;white-space:nowrap}.abtl button{min-width:28px}.eda button.arm{background:var(--red);border-color:var(--red);color:#fff}
 @media (max-width:899px){.abtl li{grid-template-columns:7ch 1fr auto auto auto}.abtl li input[data-af=t]{grid-column:1/-1;order:9}.abtl .ck{order:10;grid-column:1/-1}}
 .edp label{display:block;margin:0 0 12px}.edp label>span{display:block;color:var(--bsoft);margin-bottom:4px}
 @media (min-width:900px) and (max-width:1279px){.ed .ty,.ed .in{display:none}}
@@ -1618,9 +1618,11 @@ function edAbout(){var p=ED.ui.a,A=abCur();if(document.activeElement&&p.contains
     if(li){var r=A.tl[+li.dataset.i];if(k==="g")r.g=f.checked;else r[k]=f.value}else if(k==="lines")A.lines=f.value.split("\n");else A[k]=f.value;
     if(k==="lines"&&e.type==="change")A.lines=A.lines.filter(function(x){return x.trim()});abSet(A)};
   p.onclick=function(e){var b=e.target.closest("[data-ab]");if(!b)return;var A=cur(),li=b.closest("li[data-i]"),i=li?+li.dataset.i:-1,a=b.dataset.ab;
-    if(a==="add")A.tl.push({y:"",n:"",t:"",g:false});else if(a==="rm"){if(!confirm("Remove “"+(A.tl[i].n||A.tl[i].y||"this row")+"”?"))return;A.tl.splice(i,1)}
+    if((a==="rm"||a==="reset")&&!b.dataset.arm){var was=b.textContent;b.dataset.arm=1;b.textContent=a==="rm"?"Remove?":"Really go back?";b.classList.add("arm");
+      setTimeout(function(){if(b.isConnected&&b.dataset.arm){delete b.dataset.arm;b.textContent=was;b.classList.remove("arm")}},3000);return}
+    if(a==="add")A.tl.push({y:"",n:"",t:"",g:false});else if(a==="rm")A.tl.splice(i,1)
     else if(a==="up"&&i>0)A.tl.splice(i-1,0,A.tl.splice(i,1)[0]);else if(a==="dn"&&i<A.tl.length-1)A.tl.splice(i+1,0,A.tl.splice(i,1)[0]);
-    else if(a==="reset"){if(!confirm("Put the About copy back to the original?"))return;A=abNorm(ABOUT0)}
+    else if(a==="reset")A=abNorm(ABOUT0)
     abSet(A);edAbout();if(a==="add"){var n=p.querySelectorAll("li[data-i]");n=n[n.length-1];if(n)n.querySelector("input").focus()}}}
 document.getElementById("edbtn").onclick=edOpen;
 
