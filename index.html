@@ -372,7 +372,7 @@ body.qedit .ed{display:flex;left:auto;width:var(--qw);border-left:1px solid var(
 
 <footer class="bar" id="bar">
   <div class="bl"><span class="vsw" id="vsw" role="group" aria-label="View"></span><button id="orbbtn" type="button" aria-pressed="false">Orbit</button><span class="fw" id="fwrap"><button id="fbtn" type="button" aria-expanded="false" aria-controls="dock">Filter</button></span><button id="pickbtn" type="button" hidden><span id="pickl">Picks</span><sup id="pickn">0</sup></button><span class="pvact" id="pvact" hidden><button id="pvcopy" type="button">Copy link</button><button id="pvclear" type="button">Clear</button></span></div>
-  <div class="br"><button id="edbtn" type="button" hidden>Edit</button><a href="https://claude.ai/artifact/6NgNYe8uiCJGCaNHbqY57p#about" target="_blank" rel="noopener">About</a><button id="optbtn" type="button" aria-expanded="false">Options</button><span class="cred">Jared Erickson design and direction</span></div>
+  <div class="br"><button id="edbtn" type="button" hidden>Edit</button><a href="https://claude.ai/artifact/6NgNYe8uiCJGCaNHbqY57p#about" target="_blank" rel="noopener">About</a><a id="desklink" href="desk.html">Desk</a><button id="optbtn" type="button" aria-expanded="false">Options</button><span class="cred">Jared Erickson design and direction</span></div>
 </footer>
 <div class="veil" id="veil"></div>
 <div class="sbar" id="sbar" aria-hidden="true"></div>
@@ -1454,6 +1454,8 @@ function scvToggle(on2){if(on2===SCV.on)return;SCV.on=on2;document.body.classLis
   if(on2){if(!SCV.el)scvInit();if(!SCV.groups)scvReset();closeSheets();vscan();pump();scvWake()}
   else if(SCV.el)SCV.el.querySelectorAll("video").forEach(function(v){v.pause()});vswSync()}
 vswFill(document.getElementById("vsw"));
+/* the Desk is a page beside this one on the live site, and its own artifact everywhere else */
+(function(){var d=document.getElementById("desklink");if(d&&!/lessmade|github\.io|localhost|127\.0\.0\.1/.test(location.hostname)){d.href="https://claude.ai/artifact/MZjHptM7fGKAJF6qq8EC57";d.target="_blank";d.rel="noopener"}})();
 (function(){var ab=document.querySelector('#bar a[href*="#about"]');if(ab)ab.addEventListener("click",function(e){if(e.metaKey||e.ctrlKey||e.shiftKey)return;e.preventDefault();if(bigI>=0)closeBig(true);if(ORB.on)orbAbout(true);else abvToggle()})})();
 
 /* ---- editing. Edits live in the artifact's database (items/<id>, projects/<key>, notes/<id>) and are laid over wall.json.
