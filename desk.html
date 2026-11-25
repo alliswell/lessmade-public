@@ -88,6 +88,7 @@ canvas,img{image-rendering:pixelated}
 .sl{flex:0 0 100%;min-width:0;height:100%;scroll-snap-align:center;scroll-snap-stop:always;display:grid;place-items:center;overflow:hidden}
 .sl img,.sl video{display:block;image-rendering:auto;border:1px solid var(--w);background:var(--w);will-change:transform;-webkit-user-drag:none;pointer-events:none;object-fit:contain}
 .sl canvas{display:block;border:1px solid var(--w);will-change:transform}
+.sl img.al{background:transparent;border-color:transparent}
 .sl.end div{background:var(--k);padding:3px 10px}
 .sl.end{color:var(--w);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;text-align:center;padding:16px}
 .sl.end button,.ctl button{border:2px solid var(--k);padding:5px 16px;border-radius:8px;font-weight:700;box-shadow:2px 2px 0 var(--k);background:var(--w);color:var(--k)}
@@ -200,8 +201,9 @@ function packUrl(map,id){var e=map[id];if(!e)return Promise.reject();var p=e.p;i
       p.ids.forEach(function(x,j){u[x]=URL.createObjectURL(new Blob([buf.slice(o,o+p.len[j])],{type:"image/avif"}));o+=p.len[j]});return u}).catch(function(x){p.got=null;throw x});
   return p.got.then(function(u){return u[id]})}
 function loadImg(u){return new Promise(function(ok,no){var im=new Image();im.onload=function(){ok(im)};im.onerror=no;im.src=u})}
-function thumb(id){return PEND[id]||(PEND[id]=packUrl(POF,id).then(loadImg))}
-function full(id){return packUrl(FOF,id).then(loadImg)}
+/* pictures with a see-through background (wall.json "a") are served as real PNGs, png/<id>.png and a small png/t/<id>.png; if one is missing the pack copy is used */
+function thumb(id){return PEND[id]||(PEND[id]=BY[id]&&BY[id].a?loadImg("png/t/"+id+".png").catch(function(){return packUrl(POF,id).then(loadImg)}):packUrl(POF,id).then(loadImg))}
+function full(id){return BY[id]&&BY[id].a?loadImg("png/"+id+".png").catch(function(){return packUrl(FOF,id).then(loadImg)}):packUrl(FOF,id).then(loadImg)}
 
 /* ---- dithering ---- */
 function gray(d,n){var g=new Float32Array(n);for(var i=0,j=0;i<n;i++,j+=4){var a=d[j+3]/255;g[i]=(d[j]*.299+d[j+1]*.587+d[j+2]*.114)*a+255*(1-a)}return g}
@@ -285,7 +287,7 @@ function viewer(p,g,id){if(VW&&wins.indexOf(VW)>-1){front(VW);VW.show(p||VW.p,p?
   nav.appendChild(zo);nav.appendChild(zi);nav.appendChild(pb);nav.appendChild(nb);w.st.appendChild(cnt);w.st.appendChild(chips);w.st.appendChild(nav);vc.setAttribute("aria-live","polite");
   function box(it){var bw=sw.clientWidth-18,bh=sw.clientHeight-18,k=Math.min(bw/it.w,bh/it.h,1.5);return [Math.max(1,Math.round(it.w*k)),Math.max(1,Math.round(it.h*k))]}
   function draw(s){var it=s._it,wh=box(it),k=wh[0]+"x"+wh[1]+(OPT.colour?"c":"k");if(s._k===k)return;s._k=k;s.textContent="";s._src=null;
-    var n=OPT.colour?el("img"):el("canvas");n.style.width=wh[0]+"px";n.style.height=wh[1]+"px";if(OPT.colour){n.alt=it.c;n.draggable=false}else{n.width=wh[0];n.height=wh[1];n.setAttribute("role","img");n.setAttribute("aria-label",it.c)}s.appendChild(n);s._n=n;
+    var n=OPT.colour?el("img"):el("canvas");n.style.width=wh[0]+"px";n.style.height=wh[1]+"px";if(OPT.colour){n.alt=it.c;n.draggable=false;if(it.a)n.className="al"}else{n.width=wh[0];n.height=wh[1];n.setAttribute("role","img");n.setAttribute("aria-label",it.c)}s.appendChild(n);s._n=n;
     function put(im){if(s._k!==k)return;s._src=im;if(OPT.colour)n.src=im.src;else if(!(live&&live.s===s))atkinson(im,n,wh[0],wh[1])}
     thumb(it.id).then(function(im){if(!s._src)put(im)},function(){});if(!it.v)full(it.id).then(put,function(){})}
   /* a film plays only while it is the one in front */
@@ -379,11 +381,11 @@ function fcEnd(F){if(F&&F.v){var v=F.v;F.v=null;v.pause();v.removeAttribute("src
 function fcDraw(x,cw,ch,F){F.k+=((F.out?0:1)-F.k)*(CALM?1:.24);var it=F.it,k=F.k,m=Math.min((cw-28)/it.w,(ch-72)/it.h),tw=it.w*m,th=it.h*m,q=F.q;
   var L=Math.round(q[0]+((cw-tw)/2-q[0])*k),T=Math.round(q[1]+((ch-36-th)/2-q[1])*k),W=Math.max(2,Math.round(q[2]+(tw-q[2])*k)),H=Math.max(2,Math.round(q[3]+(th-q[3])*k));
   if(k>.25){if(!VEIL){VEIL=document.createElement("canvas");VEIL.width=VEIL.height=2;var g=VEIL.getContext("2d");g.fillStyle="#000";g.fillRect(0,0,2,2);g.fillStyle="#fff";g.fillRect(1,1,1,1)}x.fillStyle=x.createPattern(VEIL,"repeat");x.fillRect(0,0,cw,ch)}
-  var vid=F.v&&F.v.readyState>=2;x.fillStyle="#000";x.fillRect(L,T,W,H);
+  var vid=F.v&&F.v.readyState>=2,clear=it.a&&OPT.colour;if(!clear){x.fillStyle="#000";x.fillRect(L,T,W,H)}
   if(vid||F.im){if(OPT.colour){x.imageSmoothingEnabled=true;x.drawImage(vid?F.v:F.im,L,T,W,H);x.imageSmoothingEnabled=false}
     else if(vid){var fw=Math.min(W,320),fh=Math.max(2,Math.round(fw*H/W));if(!F.vc)F.vc=document.createElement("canvas");bayer(F.v,F.vc,fw,fh);x.drawImage(F.vc,L,T,W,H)}
     else{var big=k>.985,key=(big?W+"x"+H:"s")+"|"+F.im.naturalWidth;if(F.dk!==key){F.dk=key;if(!F.dc)F.dc=document.createElement("canvas");var wh=big?[W,H]:fitWH(it,150);atkinson(F.im,F.dc,wh[0],wh[1])}x.drawImage(F.dc,L,T,W,H)}}
-  x.strokeStyle="#fff";x.lineWidth=1;x.strokeRect(L-.5,T-.5,W+1,H+1);
+  if(!clear){x.strokeStyle="#fff";x.lineWidth=1;x.strokeRect(L-.5,T-.5,W+1,H+1)}
   if(k>.6)cvLabel(x,cw,ch,[it.c,nm(PROJ,it.p),it.yr,it.v?"Film":""].filter(Boolean).join(" · "),cw/2,T+H+18,true);return k}
 
 /* ---- Orbit: the work as a small galaxy to fly around. Each kind of work is a system; its pictures circle it, finished work on the inner rings and larger.
@@ -423,7 +425,7 @@ function orbit(){if(OB&&wins.indexOf(OB)>-1){front(OB);return}
       var it=T.it,kk=sz/Math.max(it.w,it.h),tw=Math.max(2,Math.round(it.w*kk)),th=Math.max(2,Math.round(it.h*kk)),L=Math.round(px-tw/2),Tp=Math.round(py-th/2);T.q=[L,Tp,tw,th];
       var tex=(sz*O.dpr>130?hiTex(it,sz*O.dpr):null)||it._ob;
       if(tex)x.drawImage(tex,L,Tp,tw,th);else{x.fillStyle="#000";x.fillRect(L,Tp,tw,th);x.strokeRect(L+.5,Tp+.5,tw-1,th-1);if(sz>=9&&asked<6){asked++;need(it)}}
-      if(sz>=20&&tex)x.strokeRect(L-.5,Tp-.5,tw+1,th+1);
+      if(sz>=20&&tex&&!(it.a&&OPT.colour))x.strokeRect(L-.5,Tp-.5,tw+1,th+1);
       if(!F&&mouse&&mouse[0]>=L-2&&mouse[0]<=L+tw+2&&mouse[1]>=Tp-2&&mouse[1]<=Tp+th+2)hov=T})}
     pass(false);x.fillStyle="#fff";sys.forEach(function(S){if(!S.on)return;var X=Math.round(S.sx),Y=Math.round(S.sy);x.fillRect(X-1,Y-5,2,10);x.fillRect(X-5,Y-1,10,2);x.fillRect(X-2,Y-2,4,4)});pass(true);
     x.imageSmoothingEnabled=false;
@@ -490,7 +492,7 @@ function wallApp(){var vw=innerWidth,vh=innerHeight-barH(),W=Math.min(vw-(vw<640
       for(var i=Math.ceil((vl-T.x-T.w)/BW);T.x+i*BW<vr;i++)for(var j=Math.ceil((vt-T.y-T.h)/BH);T.y+j*BH<vb;j++){seen=true;
         var L=Math.round((T.x+i*BW-cam.x)*z+cw/2),Tp=Math.round((T.y+j*BH-cam.y)*z+ch/2),W2=Math.max(2,Math.round(T.w*z)),H2=Math.max(2,Math.round(T.h*z));
         var px=Math.max(W2,H2)*O.dpr,hi=px>Math.max(T.w,T.h)*1.6?hiTex(it,px):null;
-        if(hi||tex)x.drawImage(hi||tex,L,Tp,W2,H2);else{x.fillStyle=PAT;x.fillRect(L,Tp,W2,H2)}x.strokeRect(L-.5,Tp-.5,W2+1,H2+1);
+        if(hi||tex)x.drawImage(hi||tex,L,Tp,W2,H2);else{x.fillStyle=PAT;x.fillRect(L,Tp,W2,H2)}if(!(it.a&&OPT.colour&&(hi||tex)))x.strokeRect(L-.5,Tp-.5,W2+1,H2+1);
         if(it.v&&W2>40){x.fillStyle="#fff";x.fillRect(L+4,Tp+H2-18,16,14);x.fillStyle="#000";x.beginPath();x.moveTo(L+9,Tp+H2-15);x.lineTo(L+16,Tp+H2-11);x.lineTo(L+9,Tp+H2-7);x.fill()}
         if(!F&&mouse&&mouse[0]>=L&&mouse[0]<=L+W2&&mouse[1]>=Tp&&mouse[1]<=Tp+H2){hov=T;T.q=[L,Tp,W2,H2]}else if(!T.q)T.q=[L,Tp,W2,H2]}
       if(seen){if(tex)it._wu=fr;else if(asked<8){asked++;need(T)}}});
