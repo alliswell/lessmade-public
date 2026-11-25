@@ -105,6 +105,7 @@ canvas,img{image-rendering:pixelated}
 /* music */
 .mu .now{display:flex;justify-content:space-between;gap:10px;padding:6px 8px 4px;white-space:nowrap}.mu .now b{font-weight:700;overflow:hidden;text-overflow:ellipsis}
 .mu canvas{display:block;width:320px;max-width:100%;height:auto;margin:0 auto;border-top:1px solid var(--k);border-bottom:1px solid var(--k);touch-action:none;cursor:ew-resize}
+.mu canvas.vz{touch-action:manipulation;cursor:pointer;border-bottom:0;background:var(--k)}
 .ctl{display:flex;justify-content:center;gap:10px;padding:10px 8px}.ctl button{min-width:56px;padding:5px 10px}
 .tl{list-style:none;margin:0;padding:0;border-top:2px solid var(--k)}
 .tl button{display:grid;grid-template-columns:3ch 1fr auto;gap:8px;width:100%;padding:3px 8px;text-align:left}.tl li+li{border-top:1px solid var(--k)}
@@ -527,12 +528,24 @@ function fader(vert,min,max,val,name,fn){var e=el("div","fd"+(vert?" v":"")),k=e
   e.addEventListener("pointerdown",function(ev){try{e.setPointerCapture(ev.pointerId)}catch(_){}at(ev);function up(){e.removeEventListener("pointermove",at);e.removeEventListener("pointerup",up);e.removeEventListener("pointercancel",up)}e.addEventListener("pointermove",at);e.addEventListener("pointerup",up);e.addEventListener("pointercancel",up)});
   e.addEventListener("keydown",function(ev){var d=ev.key==="ArrowUp"||ev.key==="ArrowRight"?1:ev.key==="ArrowDown"||ev.key==="ArrowLeft"?-1:0;if(!d)return;ev.preventDefault();ev.stopPropagation();put(val+d*(max-min)/24)});
   put(val,true);e.set=function(v){put(v,true)};return e}
-function music(auto){var vw=innerWidth,vh=innerHeight-barH();var w=win("music","Music",{w:324,h:470,auto:true,fixed:true,nost:true,exact:true,x:Math.max(4,vw-324-130),y:Math.max(6,vh-500)});if(!w)return;
+function music(auto){var vw=innerWidth,vh=innerHeight-barH();var w=win("music","Music",{w:324,h:524,auto:true,fixed:true,nost:true,exact:true,x:Math.max(4,vw-324-130),y:Math.max(6,vh-552)});if(!w)return;
   var box=el("div","mu"),now=el("div","now"),ti=el("b",null,"Reading the tape…"),tm=el("span"),cv=el("canvas"),ctl=el("div","ctl"),pv=el("button",null,"◀◀"),pp=el("button",null,"Play"),nx=el("button",null,"▶▶"),ol=el("ol","tl");
   var a=new Audio(),cur=-1,raf=0,x=cv.getContext("2d"),wait=false,AC=null,gn=null,flt=[],fk=1,FREQ=[60,250,1000,4000,12000],FNAME=["60","250","1k","4k","12k"];a.preload="none";
   /* volume and tone go through the browser's audio engine, which may only start once the visitor has touched the page; until then the plain volume is used */
   function graph(){if(AC)return true;var C=window.AudioContext||window.webkitAudioContext;if(!C)return false;try{AC=new C();var n=AC.createMediaElementSource(a);FREQ.forEach(function(f,i){var b=AC.createBiquadFilter();b.type=i===0?"lowshelf":i===4?"highshelf":"peaking";b.frequency.value=f;b.Q.value=1;b.gain.value=SND.eq[i];n.connect(b);n=b;flt.push(b)});
-      gn=AC.createGain();gn.gain.value=SND.v;n.connect(gn);gn.connect(AC.destination);setVol()}catch(e){if(!gn){AC=null;flt=[];return false}}return true}
+      gn=AC.createGain();gn.gain.value=SND.v;n.connect(gn);gn.connect(AC.destination);setVol();
+      an=AC.createAnalyser();an.fftSize=512;an.smoothingTimeConstant=.55;an.minDecibels=-78;an.maxDecibels=-6;gn.connect(an);fq=new Uint8Array(an.frequencyBinCount);td=new Uint8Array(an.fftSize)}catch(e){if(!gn){AC=null;flt=[];return false}}return true}
+  /* the visualizer: white on black. Bars in blocks with a falling peak line, or a wave; click it to switch. It listens to the real sound once the audio engine is running, and before that moves with the track's drawn waveform */
+  var vz=el("canvas"),vg=vz.getContext("2d"),an=null,fq=null,td=null,lv=[],pk=[],vm=0;vz.width=320;vz.height=52;vz.className="vz";vz.setAttribute("role","button");vz.tabIndex=0;vz.setAttribute("aria-label","Visualizer. Press to switch between bars and wave");
+  try{vm=localStorage.getItem("lm-desk-viz")==="1"?1:0}catch(_){}
+  function viz(){var W=320,H=52,N=32,i,on=!a.paused&&cur>-1,real=on&&an&&AC&&AC.state==="running",t=TRK&&TRK[cur],amp=on&&t?parseInt(t.w[Math.min(t.w.length-1,Math.floor(a.currentTime/dur()*t.w.length))],16)/15:0,now=performance.now();
+    vg.fillStyle="#000";vg.fillRect(0,0,W,H);vg.fillStyle="#fff";
+    if(vm===1){if(real)an.getByteTimeDomainData(td);var py=H/2;for(i=0;i<W;i++){var v=real?(td[Math.floor(i/W*td.length*.6)]-128)/128*2.2:amp*.8*Math.sin(i*.11+now*.012)*Math.sin(i*.023+now*.003),y=Math.round(H/2+Math.max(-1,Math.min(1,v))*(H/2-3)),a0=Math.min(py,y),b0=Math.max(py,y);vg.fillRect(i,a0,1,Math.max(2,b0-a0+1));py=y}return}
+    if(real)an.getByteFrequencyData(fq);var ny=real?AC.sampleRate/2:1;
+    for(i=0;i<N;i++){var tg;if(real){var lo=Math.floor(45*Math.pow(180,i/N)/ny*fq.length),hi=Math.max(lo+1,Math.floor(45*Math.pow(180,(i+1)/N)/ny*fq.length)),sum=0;for(var b=lo;b<hi&&b<fq.length;b++)sum+=fq[b];tg=Math.min(1,Math.pow(sum/(hi-lo)/255,1.5)*(1+i/N*1.4))}
+      else tg=amp*(.3+.7*Math.abs(Math.sin(i*1.7+now*.007+i*i*.3)))*(1-i/N*.55);
+      lv[i]=Math.max(tg,(lv[i]||0)*.78);pk[i]=Math.max(lv[i],(pk[i]||0)-.025);var h=Math.round(lv[i]*(H-6)/4)*4;for(var q=0;q<h;q+=4)vg.fillRect(i*10+1,H-3-q-3,8,3);vg.fillRect(i*10+1,H-3-Math.round(pk[i]*(H-6)),8,1)}}
+  vz.onclick=function(){vm=vm?0:1;try{localStorage.setItem("lm-desk-viz",vm)}catch(_){}viz()};vz.onkeydown=function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();vz.onclick()}};
   function wake(){if(graph()&&AC.state==="suspended")AC.resume().catch(function(){})}
   function setVol(){if(gn)gn.gain.value=SND.v;try{a.volume=Math.max(0,Math.min(1,fk*(gn?1:SND.v)))}catch(_){}}
   function keepSnd(){try{localStorage.setItem("lm-desk-snd",JSON.stringify(SND))}catch(_){}}
@@ -541,27 +554,27 @@ function music(auto){var vw=innerWidth,vh=innerHeight-barH();var w=win("music","
   FREQ.forEach(function(f,i){var b=el("div","b"),fd=fader(true,-12,12,SND.eq[i],FNAME[i]+" hertz",function(v){SND.eq[i]=Math.abs(v)<.6?0:Math.round(v*10)/10;wake();if(flt[i])flt[i].gain.value=SND.eq[i];keepSnd()});efs.push(fd);b.appendChild(fd);b.appendChild(el("span",null,FNAME[i]));eq.appendChild(b)});
   var flat=el("button",null,"Flat");flat.type="button";flat.onclick=function(){SND.eq=[0,0,0,0,0];efs.forEach(function(fd){fd.set(0)});flt.forEach(function(b){b.gain.value=0});keepSnd()};eq.appendChild(flat);cv.width=320;cv.height=64;cv.setAttribute("role","img");
   pv.type=pp.type=nx.type="button";pv.setAttribute("aria-label","Previous track");nx.setAttribute("aria-label","Next track");
-  now.appendChild(ti);now.appendChild(tm);ctl.appendChild(pv);ctl.appendChild(pp);ctl.appendChild(nx);box.appendChild(now);box.appendChild(cv);box.appendChild(ctl);box.appendChild(volRow);box.appendChild(ol);box.appendChild(eq);w.bd.appendChild(box);setVol();
+  now.appendChild(ti);now.appendChild(tm);ctl.appendChild(pv);ctl.appendChild(pp);ctl.appendChild(nx);box.appendChild(now);box.appendChild(vz);box.appendChild(cv);box.appendChild(ctl);box.appendChild(volRow);box.appendChild(ol);box.appendChild(eq);w.bd.appendChild(box);setVol();
   function dur(){return isFinite(a.duration)&&a.duration>0?a.duration:(TRK[cur]||{}).s||1}
   /* played: solid. still to come: every other column, which reads as grey */
   function paint(){x.fillStyle="#fff";x.fillRect(0,0,320,64);var t=TRK&&TRK[cur];if(!t)return;var n=t.w.length,bw=320/n,at=Math.min(1,a.currentTime/dur())*n;x.fillStyle="#000";
     for(var j=0;j<n;j++){var h=Math.max(1,Math.round(parseInt(t.w[j],16)/15*29)),X=Math.round(j*bw);if(j<at)x.fillRect(X,32-h,Math.ceil(bw),h*2);else x.fillRect(X,32-h,1,h*2)}
     x.fillRect(Math.min(319,Math.round(at*bw)),0,1,64);tm.textContent=wait?"Click anywhere to play":mmss(a.currentTime)+" / "+mmss(dur());cv.setAttribute("aria-label","Waveform of "+t.n+", "+mmss(a.currentTime)+" of "+mmss(dur()))}
-  function loop(){cancelAnimationFrame(raf);var last=0;(function f(t){raf=requestAnimationFrame(f);if(t-last<80)return;last=t;paint()})(0)}
+  function loop(){cancelAnimationFrame(raf);var last=0,n=0;(function f(t){raf=requestAnimationFrame(f);if(t-last<40)return;last=t;viz();if(n++%2===0)paint()})(0)}
   function load(i,go){cur=(i+TRK.length)%TRK.length;var t=TRK[cur];a.src=t.f;ti.textContent=t.n;ol.querySelectorAll("button").forEach(function(b,j){b.setAttribute("aria-current",j===cur)});paint();if(go)go===2?first():a.play().catch(function(){})}
   /* browsers will not start sound until the visitor has touched the page, so if the first try is refused, the first click or key starts it */
   function first(){fk=0;setVol();a.addEventListener("playing",function(){var t0=performance.now(),iv=setInterval(function(){var k=Math.min(1,(performance.now()-t0)/5000);fk=k*k;setVol();if(k>=1)clearInterval(iv)},50)},{once:true});
     var p=a.play();if(!p||!p.catch)return;p.catch(function(){if(wins.indexOf(w)<0)return;wait=true;paint();
       function f(e){removeEventListener("pointerdown",f,true);removeEventListener("keydown",f,true);if(!wait)return;wait=false;if(wins.indexOf(w)<0)return;if(e.target.closest&&e.target.closest(".mu")){paint();return}a.play().catch(function(){paint()})}
       addEventListener("pointerdown",f,true);addEventListener("keydown",f,true)})}
-  a.addEventListener("play",function(){wait=false;pp.textContent="Pause";loop()});a.addEventListener("pause",function(){pp.textContent="Play";cancelAnimationFrame(raf);paint()});
+  a.addEventListener("play",function(){wait=false;pp.textContent="Pause";loop()});a.addEventListener("pause",function(){pp.textContent="Play";cancelAnimationFrame(raf);lv=[];pk=[];paint();viz()});
   a.addEventListener("ended",function(){load(cur+1,true)});a.addEventListener("loadedmetadata",paint);a.addEventListener("error",function(){if(cur>-1)tm.textContent="Will not play"});
   pp.onclick=function(){if(!TRK||!TRK.length)return;if(a.paused){var p=a.play();if(p&&p.catch)p.catch(function(){})}else a.pause()};pv.onclick=function(){if(TRK&&TRK.length)load(a.currentTime>3?cur:cur-1,!a.paused||a.currentTime>0)};nx.onclick=function(){if(TRK&&TRK.length)load(cur+1,!a.paused||a.currentTime>0)};
   cv.addEventListener("pointerdown",function(e){if(cur<0)return;cv.setPointerCapture(e.pointerId);function seek(ev){var r=cv.getBoundingClientRect(),f=Math.max(0,Math.min(.999,(ev.clientX-r.left)/r.width));try{a.currentTime=f*dur()}catch(_){}paint()}
     function up(){cv.removeEventListener("pointermove",seek);cv.removeEventListener("pointerup",up);cv.removeEventListener("pointercancel",up)}seek(e);cv.addEventListener("pointermove",seek);cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up)});
   function ready(){if(wins.indexOf(w)<0)return;if(!TRK.length){ti.textContent="No music on this disk";return}
     TRK.forEach(function(t,i){var li=el("li"),b=el("button");b.type="button";b.appendChild(el("span",null,i+1+"."));b.appendChild(el("span",null,t.n));b.appendChild(el("span",null,mmss(t.s)));b.onclick=function(){load(i,true)};li.appendChild(b);ol.appendChild(li)});load(0,auto?2:false)}
-  w.onclose=function(){cancelAnimationFrame(raf);removeEventListener("pointerdown",touch,true);removeEventListener("keydown",touch,true);a.pause();a.removeAttribute("src");a.load();if(AC)AC.close().catch(function(){})};paint();
+  w.onclose=function(){cancelAnimationFrame(raf);removeEventListener("pointerdown",touch,true);removeEventListener("keydown",touch,true);a.pause();a.removeAttribute("src");a.load();if(AC)AC.close().catch(function(){})};paint();viz();
   if(TRK)ready();else fetch("music/tracks.json",{cache:"no-cache"}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(t){TRK=t},function(){TRK=[]}).then(ready)}
 
 /* ---- Notes: a small word processor. Each note is a window left on the desk. The owner's are seen by everyone; anyone else's stay on their own device.
