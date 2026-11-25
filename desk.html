@@ -109,6 +109,15 @@ canvas,img{image-rendering:pixelated}
 .tl{list-style:none;margin:0;padding:0;border-top:2px solid var(--k)}
 .tl button{display:grid;grid-template-columns:3ch 1fr auto;gap:8px;width:100%;padding:3px 8px;text-align:left}.tl li+li{border-top:1px solid var(--k)}
 .tl button[aria-current=true]{background:var(--k);color:var(--w)}
+/* faders: volume lies flat, the equaliser's five stand up */
+.fd{position:relative;flex:1;height:14px;border:2px solid var(--k);background:var(--lite);touch-action:none;cursor:ew-resize}
+.fd i{position:absolute;top:-5px;width:10px;height:20px;background:var(--w);border:2px solid var(--k)}
+.fd.v{flex:none;width:14px;height:72px;cursor:ns-resize;background:linear-gradient(var(--k),var(--k)) 0 50%/100% 2px no-repeat,var(--lite)}
+.fd.v i{top:auto;left:-6px;width:22px;height:9px}
+.vol{display:flex;align-items:center;gap:12px;padding:0 14px 10px;font-size:13px}
+.eq{display:flex;justify-content:space-between;align-items:flex-end;gap:4px;padding:12px 14px 8px;border-top:2px solid var(--k);font-size:12px}
+.eq .b{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:34px}
+.eq button{align-self:center;border:2px solid var(--k);padding:2px 8px;font-weight:700;font-size:13px;background:var(--w)}.eq button:active{background:var(--k);color:var(--w)}
 /* notes: a small word processor */
 .bd.nb{overflow:hidden;display:flex;flex-direction:column}
 .tbar{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;padding:4px 6px;border-bottom:2px solid var(--k)}.tbar[hidden]{display:none}
@@ -510,11 +519,29 @@ function wallApp(){var vw=innerWidth,vh=innerHeight-barH(),W=Math.min(vw-(vw<640
 /* ---- Music: a short list of tracks, each with its waveform drawn in bars ---- */
 var TRK=null;
 function mmss(t){t=Math.max(0,Math.round(t||0));return Math.floor(t/60)+":"+("0"+t%60).slice(-2)}
-function music(auto){var vw=innerWidth,vh=innerHeight-barH();var w=win("music","Music",{w:324,h:330,auto:true,fixed:true,nost:true,exact:true,x:Math.max(4,vw-324-130),y:Math.max(6,vh-350)});if(!w)return;
+var SND={v:1,eq:[0,0,0,0,0]};try{var ss=JSON.parse(localStorage.getItem("lm-desk-snd")||"null");if(ss&&ss.eq&&ss.eq.length===5){SND.v=Math.max(0,Math.min(1,+ss.v));SND.eq=ss.eq.map(function(n){return Math.max(-12,Math.min(12,+n||0))});if(isNaN(SND.v))SND.v=1}}catch(e){}
+/* a slider drawn in two colours: drag it, or use the arrow keys */
+function fader(vert,min,max,val,name,fn){var e=el("div","fd"+(vert?" v":"")),k=el("i");e.appendChild(k);e.tabIndex=0;e.setAttribute("role","slider");e.setAttribute("aria-label",name);e.setAttribute("aria-valuemin",min);e.setAttribute("aria-valuemax",max);if(vert)e.setAttribute("aria-orientation","vertical");
+  function put(v,quiet){v=Math.max(min,Math.min(max,v));val=v;var f=(v-min)/(max-min);if(vert)k.style.bottom="calc("+f*100+"% - "+(f*9-2).toFixed(1)+"px - 2px)";else k.style.left="calc("+f*100+"% - "+(f*10).toFixed(1)+"px - 2px)";e.setAttribute("aria-valuenow",Math.round(v*100)/100);if(!quiet)fn(v)}
+  function at(ev){var r=e.getBoundingClientRect();put(min+(vert?1-(ev.clientY-r.top)/r.height:(ev.clientX-r.left)/r.width)*(max-min))}
+  e.addEventListener("pointerdown",function(ev){try{e.setPointerCapture(ev.pointerId)}catch(_){}at(ev);function up(){e.removeEventListener("pointermove",at);e.removeEventListener("pointerup",up);e.removeEventListener("pointercancel",up)}e.addEventListener("pointermove",at);e.addEventListener("pointerup",up);e.addEventListener("pointercancel",up)});
+  e.addEventListener("keydown",function(ev){var d=ev.key==="ArrowUp"||ev.key==="ArrowRight"?1:ev.key==="ArrowDown"||ev.key==="ArrowLeft"?-1:0;if(!d)return;ev.preventDefault();ev.stopPropagation();put(val+d*(max-min)/24)});
+  put(val,true);e.set=function(v){put(v,true)};return e}
+function music(auto){var vw=innerWidth,vh=innerHeight-barH();var w=win("music","Music",{w:324,h:470,auto:true,fixed:true,nost:true,exact:true,x:Math.max(4,vw-324-130),y:Math.max(6,vh-500)});if(!w)return;
   var box=el("div","mu"),now=el("div","now"),ti=el("b",null,"Reading the tape…"),tm=el("span"),cv=el("canvas"),ctl=el("div","ctl"),pv=el("button",null,"◀◀"),pp=el("button",null,"Play"),nx=el("button",null,"▶▶"),ol=el("ol","tl");
-  var a=new Audio(),cur=-1,raf=0,x=cv.getContext("2d"),wait=false;a.preload="none";cv.width=320;cv.height=64;cv.setAttribute("role","img");
+  var a=new Audio(),cur=-1,raf=0,x=cv.getContext("2d"),wait=false,AC=null,gn=null,flt=[],fk=1,FREQ=[60,250,1000,4000,12000],FNAME=["60","250","1k","4k","12k"];a.preload="none";
+  /* volume and tone go through the browser's audio engine, which may only start once the visitor has touched the page; until then the plain volume is used */
+  function graph(){if(AC)return true;var C=window.AudioContext||window.webkitAudioContext;if(!C)return false;try{AC=new C();var n=AC.createMediaElementSource(a);FREQ.forEach(function(f,i){var b=AC.createBiquadFilter();b.type=i===0?"lowshelf":i===4?"highshelf":"peaking";b.frequency.value=f;b.Q.value=1;b.gain.value=SND.eq[i];n.connect(b);n=b;flt.push(b)});
+      gn=AC.createGain();gn.gain.value=SND.v;n.connect(gn);gn.connect(AC.destination);setVol()}catch(e){if(!gn){AC=null;flt=[];return false}}return true}
+  function wake(){if(graph()&&AC.state==="suspended")AC.resume().catch(function(){})}
+  function setVol(){if(gn)gn.gain.value=SND.v;try{a.volume=Math.max(0,Math.min(1,fk*(gn?1:SND.v)))}catch(_){}}
+  function keepSnd(){try{localStorage.setItem("lm-desk-snd",JSON.stringify(SND))}catch(_){}}
+  function touch(){wake()}addEventListener("pointerdown",touch,true);addEventListener("keydown",touch,true);
+  var volRow=el("div","vol"),vf=fader(false,0,1,SND.v,"Volume",function(v){SND.v=v;wake();setVol();keepSnd()}),eq=el("div","eq"),efs=[];volRow.appendChild(el("span",null,"Volume"));volRow.appendChild(vf);
+  FREQ.forEach(function(f,i){var b=el("div","b"),fd=fader(true,-12,12,SND.eq[i],FNAME[i]+" hertz",function(v){SND.eq[i]=Math.abs(v)<.6?0:Math.round(v*10)/10;wake();if(flt[i])flt[i].gain.value=SND.eq[i];keepSnd()});efs.push(fd);b.appendChild(fd);b.appendChild(el("span",null,FNAME[i]));eq.appendChild(b)});
+  var flat=el("button",null,"Flat");flat.type="button";flat.onclick=function(){SND.eq=[0,0,0,0,0];efs.forEach(function(fd){fd.set(0)});flt.forEach(function(b){b.gain.value=0});keepSnd()};eq.appendChild(flat);cv.width=320;cv.height=64;cv.setAttribute("role","img");
   pv.type=pp.type=nx.type="button";pv.setAttribute("aria-label","Previous track");nx.setAttribute("aria-label","Next track");
-  now.appendChild(ti);now.appendChild(tm);ctl.appendChild(pv);ctl.appendChild(pp);ctl.appendChild(nx);box.appendChild(now);box.appendChild(cv);box.appendChild(ctl);box.appendChild(ol);w.bd.appendChild(box);
+  now.appendChild(ti);now.appendChild(tm);ctl.appendChild(pv);ctl.appendChild(pp);ctl.appendChild(nx);box.appendChild(now);box.appendChild(cv);box.appendChild(ctl);box.appendChild(volRow);box.appendChild(ol);box.appendChild(eq);w.bd.appendChild(box);setVol();
   function dur(){return isFinite(a.duration)&&a.duration>0?a.duration:(TRK[cur]||{}).s||1}
   /* played: solid. still to come: every other column, which reads as grey */
   function paint(){x.fillStyle="#fff";x.fillRect(0,0,320,64);var t=TRK&&TRK[cur];if(!t)return;var n=t.w.length,bw=320/n,at=Math.min(1,a.currentTime/dur())*n;x.fillStyle="#000";
@@ -523,7 +550,7 @@ function music(auto){var vw=innerWidth,vh=innerHeight-barH();var w=win("music","
   function loop(){cancelAnimationFrame(raf);var last=0;(function f(t){raf=requestAnimationFrame(f);if(t-last<80)return;last=t;paint()})(0)}
   function load(i,go){cur=(i+TRK.length)%TRK.length;var t=TRK[cur];a.src=t.f;ti.textContent=t.n;ol.querySelectorAll("button").forEach(function(b,j){b.setAttribute("aria-current",j===cur)});paint();if(go)go===2?first():a.play().catch(function(){})}
   /* browsers will not start sound until the visitor has touched the page, so if the first try is refused, the first click or key starts it */
-  function first(){try{a.volume=0}catch(_){}a.addEventListener("playing",function(){var t0=performance.now(),iv=setInterval(function(){var k=Math.min(1,(performance.now()-t0)/5000);try{a.volume=k*k}catch(_){}if(k>=1)clearInterval(iv)},50)},{once:true});
+  function first(){fk=0;setVol();a.addEventListener("playing",function(){var t0=performance.now(),iv=setInterval(function(){var k=Math.min(1,(performance.now()-t0)/5000);fk=k*k;setVol();if(k>=1)clearInterval(iv)},50)},{once:true});
     var p=a.play();if(!p||!p.catch)return;p.catch(function(){if(wins.indexOf(w)<0)return;wait=true;paint();
       function f(e){removeEventListener("pointerdown",f,true);removeEventListener("keydown",f,true);if(!wait)return;wait=false;if(wins.indexOf(w)<0)return;if(e.target.closest&&e.target.closest(".mu")){paint();return}a.play().catch(function(){paint()})}
       addEventListener("pointerdown",f,true);addEventListener("keydown",f,true)})}
@@ -534,7 +561,7 @@ function music(auto){var vw=innerWidth,vh=innerHeight-barH();var w=win("music","
     function up(){cv.removeEventListener("pointermove",seek);cv.removeEventListener("pointerup",up);cv.removeEventListener("pointercancel",up)}seek(e);cv.addEventListener("pointermove",seek);cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up)});
   function ready(){if(wins.indexOf(w)<0)return;if(!TRK.length){ti.textContent="No music on this disk";return}
     TRK.forEach(function(t,i){var li=el("li"),b=el("button");b.type="button";b.appendChild(el("span",null,i+1+"."));b.appendChild(el("span",null,t.n));b.appendChild(el("span",null,mmss(t.s)));b.onclick=function(){load(i,true)};li.appendChild(b);ol.appendChild(li)});load(0,auto?2:false)}
-  w.onclose=function(){cancelAnimationFrame(raf);a.pause();a.removeAttribute("src");a.load()};paint();
+  w.onclose=function(){cancelAnimationFrame(raf);removeEventListener("pointerdown",touch,true);removeEventListener("keydown",touch,true);a.pause();a.removeAttribute("src");a.load();if(AC)AC.close().catch(function(){})};paint();
   if(TRK)ready();else fetch("music/tracks.json",{cache:"no-cache"}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(t){TRK=t},function(){TRK=[]}).then(ready)}
 
 /* ---- Notes: a small word processor. Each note is a window left on the desk. The owner's are seen by everyone; anyone else's stay on their own device.
