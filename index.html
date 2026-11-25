@@ -372,6 +372,20 @@ var PROJ=[["brother-moto","Brother Moto"],["switchyards","Switchyards"],["8bit",
 /* filter groups: what kind of work it is. "design"/"personal" pick a whole side. */
 var CATS=[["brand","Brand","design"],["product","Product","design"],["interior","Interior","design"],["memories","Memories","personal"],["inspiration","Inspiration","personal"],["fun","For fun","personal"]];
 var SIDES=[["design","Design"],["personal","Personal"]];
+/* what every view opens on: products and interiors, with the strongest brand pieces every third picture.
+   STRONG is in order, best first. Change it to change what leads. */
+var STRONG=["bm-236","bm-090","bm-232","sy-170","bm-074","sy-206","bm-226","sy-73","bm-034","bm-118","bm-137","sy-205","bm-058","bm-063","bm-082","sy-62","bm-155","bm-183","bm-117","bm-047","bm-154","sy-v08","bm-107","bm-108","bm-110","sa-11"];
+var START_G=["product","interior","brand","memories","inspiration","fun"];
+function isStrong(it){return STRONG.indexOf(it.id)>-1&&(it.g||"brand")==="brand"}
+/* round-robin across projects, keeping each project's own order */
+function mixProj(list){var by={},keys=[];list.forEach(function(it){if(!by[it.p]){by[it.p]=[];keys.push(it.p)}by[it.p].push(it)});var out=[],any=true;while(any){any=false;keys.forEach(function(k){if(by[k].length){out.push(by[k].shift());any=true}})}return out}
+/* the pools: products and interiors mixed across projects, strong brand pieces best first */
+function leadPools(list){var P=[],I=[],B=[];list.forEach(function(it){if(it.g==="product")P.push(it);else if(it.g==="interior")I.push(it);else if(isStrong(it))B.push(it)});
+  B.sort(function(a,b){return STRONG.indexOf(a.id)-STRONG.indexOf(b.id)});return {P:mixProj(P),I:mixProj(I),B:B}}
+/* first n pictures go product, interior, brand, product, interior, brand...; the rest keep their usual order */
+function leadOrder(list,n){var L=leadPools(list),out=[],used=new Set();
+  while(out.length<n&&(L.P.length||L.I.length||L.B.length))[L.P.shift(),L.I.shift(),L.B.shift()].forEach(function(x){if(x){out.push(x);used.add(x)}});
+  return out.concat(list.filter(function(x){return !used.has(x)}))}
 function inG(it,g){if(!g)return true;if(g==="design"||g==="personal")return CATS.some(function(c){return c[0]===it.g&&c[2]===g});return it.g===g}
 var TYPES=[["product","Product"],["graphic","Graphic"],["spatial","Spatial"],["web","Web"],["photo","Photo"]];
 var RM=matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -415,7 +429,7 @@ Spring.prototype.step=function(k,d){var a=(this.t-this.v)*k-this.s*d;this.s+=a;t
 /* ---- one block of the wall: a loose skyline masonry, repeated forever in x and y ---- */
 function layout(){
   var vw=innerWidth,vh=innerHeight,gap=vw<600?12:22,cw=vw<520?150:vw<900?200:250,big=active();
-  var vis=items.filter(function(it){return !it.hide}),list=vis.slice();if(big)list.sort(function(a,b){return (on(b)?1:0)-(on(a)?1:0)||a.i-b.i});
+  var vis=items.filter(function(it){return !it.hide}),list=big?vis.slice():leadOrder(vis,180);if(big)list.sort(function(a,b){return (on(b)?1:0)-(on(a)?1:0)||a.i-b.i});
   var cols=Math.max(Math.ceil((vw*1.25)/(cw+gap)),Math.ceil(Math.sqrt(vis.length*1.1))),h=new Array(cols).fill(0);
   TW=cols*(cw+gap);phMeasure();if(PH)h.fill(PH.y+PH.h+gap*3);
   list.forEach(function(it){var o=!big||on(it),span=o&&(big?it.i%3===0:it.i%7===0)?2:1,best=0,bh=1e9;
@@ -542,7 +556,7 @@ function build(data){
     items.push(it)});
   loadPicks();dock();layout();opts();loadCuts();
   /* start with the block's middle in view */
-  cam.x=TW*.5-innerWidth/2;cam.y=TH*.25;
+  cam.x=TW*.5-innerWidth/2;cam.y=0;
   /* first load: only the tiles that fill the screen come in, each sliding from the screen edge it's nearest to,
      at its own size and angle. Everything else is already in place off screen */
   }
@@ -1042,8 +1056,8 @@ function orbPrep(){if(ORB.ready)return;ORB.ready=true;
   /* systems: rings of pictures, colour-ordered (bright colours by hue, then greys by lightness) */
   var U=64,GAP=78,sys=[];
   /* one system per filter group (Brand, Product, Interior, Memories, Inspiration, For fun) */
-  CATS.forEach(function(sj){var list=items.filter(function(it){return !it.hide&&(it.g||"brand")===sj[0]});if(!list.length)return;
-    list.sort(function(a,b){var ga=a.col.s<.18,gb=b.col.s<.18;if(ga!==gb)return ga?1:-1;return ga?a.col.l-b.col.l:a.col.h-b.col.h});
+  CATS.slice().sort(function(a,b){return START_G.indexOf(a[0])-START_G.indexOf(b[0])}).forEach(function(sj){var list=items.filter(function(it){return !it.hide&&(it.g||"brand")===sj[0]});if(!list.length)return;
+    list.sort(function(a,b){var sa=isStrong(a),sb=isStrong(b);if(sa!==sb)return sa?-1:1;var ga=a.col.s<.18,gb=b.col.s<.18;if(ga!==gb)return ga?1:-1;return ga?a.col.l-b.col.l:a.col.h-b.col.h});
     var rings=[],k=0,left=list.slice();while(left.length){var rad=90+k*GAP,cap=Math.max(6,Math.floor(Math.PI*2*rad/(U*1.18)));rings.push({r:rad,its:left.splice(0,cap),w:(k%2?-1:1)*.05/(1+k*.35)});k++}
     sys.push({key:sj[0],name:sj[1],n:list.length,rings:rings,R:rings[rings.length-1].r+U})});
   sys.forEach(function(s){s.rings.forEach(function(rg,k){rg.its.forEach(function(it,j){it.orb={s:s,rg:rg,a:j/rg.its.length*Math.PI*2+k*.7}})})});
@@ -1340,16 +1354,18 @@ function vswSync(){document.querySelectorAll(".vsw button,.orbpj .vt button").fo
    picture once on screen; videos play while mostly in view. Tap a picture to open the viewer. ---- */
 var SCV={on:false,el:null,groups:null,next:0,n:0,io:null,io2:null,vio:null,fio:null,sent:null,vis:new Set(),pm:{x:0,y:0,tx:0,ty:0},raf:0,act:0};
 function scvGroups(){var by={};PROJ.forEach(function(x){by[x[0]]=[]});
-  items.forEach(function(it){if(it.hide||!(by[it.p]))return;if(active()&&!on(it))return;by[it.p].push(it)});
+  /* unfiltered, it opens on sections of products, interiors and strong brand pieces in turn (until those run out) */
+  var lead=[],used=new Set();if(!active()){var L=leadPools(items.filter(function(it){return !it.hide&&by[it.p]}));
+    while(L.B.length&&(L.P.length||L.I.length))[["P","Product"],["I","Interior"],["B","Brand"]].forEach(function(k){var its=L[k[0]].splice(0,9);if(its.length){lead.push({p:"",pn:"",t:k[1],its:its});its.forEach(function(x){used.add(x)})}})}
+  items.forEach(function(it){if(it.hide||!(by[it.p])||used.has(it))return;if(active()&&!on(it))return;by[it.p].push(it)});
   var queues=PROJ.map(function(x){var list=by[x[0]],sub={},order=[];
     /* one run of sections per filter group, in filter order; inside a group, like subjects sit together */
     var si=function(it){var k=SUBJ.findIndex(function(z){return z[0]===(it.s&&it.s[0])});return k<0?99:k};
     list.forEach(function(it){var k=it.g||"brand";if(!sub[k]){sub[k]=[];order.push(k)}sub[k].push(it)});
-    order.sort(function(a,b){var ia=CATS.findIndex(function(z){return z[0]===a}),ib=CATS.findIndex(function(z){return z[0]===b});return (ia<0?99:ia)-(ib<0?99:ib)});
+    order.sort(function(a,b){var ia=START_G.indexOf(a),ib=START_G.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)});
     var q=[];order.forEach(function(k){var arr=sub[k].slice().sort(function(a,b){return si(a)-si(b)||a.i-b.i}),nm=nmOf(CATS,k);for(var i=0;i<arr.length;i+=9)q.push({p:x[0],pn:x[1],t:nm,its:arr.slice(i,i+9)})});return q}).filter(function(q){return q.length});
-  var out=[],any=true;while(any){any=false;queues.forEach(function(q){if(q.length){out.push(q.shift());any=true}})}return out}
-function scvSection(g){var sec=el("section","ss"),hd=el("header");SCV.n++;
-  hd.appendChild(el("span","ix",String(SCV.n).padStart(3,"0")));hd.appendChild(el("span","pj",g.pn));hd.appendChild(el("span","ct",g.its.length+(g.its.length===1?" picture":" pictures")));hd.appendChild(el("h2",null,g.t));sec.appendChild(hd);
+  var out=lead,any=true;while(any){any=false;queues.forEach(function(q){if(q.length){out.push(q.shift());any=true}})}return out}
+function scvSection(g){var sec=el("section","ss");SCV.n++;sec.setAttribute("aria-label",g.pn+", "+g.t);
   var grid=el("div","sg"),wide=0;
   for(var i=0;i<g.its.length;i++){var it=g.its[i],ar=it.wN/it.hN,nx=g.its[i+1],cls;
     if(ar>=1.15){cls=wide++%2?"s5r":"s6"}else if(nx&&nx.wN/nx.hN<1.15){cls="s3";grid.appendChild(scvFig(it,cls));it=nx;i++}else cls="s4";
