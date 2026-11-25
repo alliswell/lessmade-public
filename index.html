@@ -124,6 +124,21 @@ body.oabout.asel .orbab{opacity:0}
 .orbab li b{font-weight:500;font-variant-numeric:tabular-nums}.orbab li span{text-transform:uppercase;letter-spacing:.04em}.orbab li i{font-style:normal;opacity:.72}
 @media (max-aspect-ratio:1/1){.orbab ol{columns:1;width:46ch;font-size:.44em}.orbab h3{font-size:.4em}.orbab h2,.orbab .pl{font-size:.54em}}
 .orbab li.gone span::after{content:" (closed)";opacity:.6;text-transform:none}
+/* About as a page, for Wall and Scroll (Orbit shows it in its centre) */
+.abv{position:fixed;inset:0;z-index:7;display:none;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;background:var(--bg);color:var(--fg);box-sizing:border-box;
+  padding:calc(10px + env(safe-area-inset-top,0px) + var(--size,48px)*1.25 + 28px) max(16px,env(safe-area-inset-right,0px)) calc(90px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+body.abon .abv{display:block}body.orbit .abv{display:none}
+.abv .in{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:minmax(0,66ch) minmax(0,1fr);gap:clamp(28px,5vw,72px);align-items:start}
+.abv .bk{font:500 11px/1.4 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--bink);background:none;border:0;padding:6px 0;margin:0 0 18px;cursor:pointer}
+.abv h2,.abv .pl{margin:0;font:400 clamp(20px,2.3vw,30px)/1.25 var(--sans);letter-spacing:-.02em;color:var(--red)}
+.abv .pl{margin-bottom:1.6em}
+.abv h3{margin:0 0 .7em;font:500 11px/1.4 var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--bink)}
+.abv ol{list-style:none;margin:0;padding:0;font:400 12px/1.5 var(--mono)}
+.abv li{display:grid;grid-template-columns:10ch 14ch minmax(0,1fr);gap:0 1ch;padding:.55em 0;border-top:1px solid color-mix(in srgb,var(--fg) 16%,transparent)}
+.abv li b{font-weight:500;font-variant-numeric:tabular-nums}.abv li span{text-transform:uppercase;letter-spacing:.04em}.abv li i{font-style:normal;opacity:.72}
+.abv li.gone span::after{content:" (closed)";opacity:.6;text-transform:none}
+.abv .abp{columns:3;column-gap:10px}.abv .abp img{display:block;width:100%;height:auto;margin:0 0 10px;background:color-mix(in srgb,var(--fg) 6%,transparent)}
+@media (max-width:820px){.abv .in{grid-template-columns:minmax(0,1fr)}.abv li{grid-template-columns:10ch minmax(0,1fr)}.abv li i{grid-column:2}.abv .abp{columns:2}}
 .orbpj button{position:relative}.orbpj button .n{position:absolute;left:100%;top:.1em;vertical-align:0;margin-left:.1em}
 .orbpj .vt{display:flex;gap:1.2em;margin-top:.5em;font:500 max(.26em,10px)/1 var(--mono);letter-spacing:.06em;text-transform:uppercase}
 .orbpj .vt button{opacity:1;color:var(--bsoft);padding:.6em .2em}.orbpj .vt button[aria-pressed=true]{color:var(--fg)}
@@ -1163,7 +1178,19 @@ function abCur(){return ED.ab||ABOUT0}
 function orbAbFill(d){var A=abCur();d.innerHTML="";d.appendChild(el("h2",null,A.name));
   var pl=el("p","pl");A.lines.forEach(function(t,i){if(i)pl.appendChild(document.createElement("br"));pl.appendChild(document.createTextNode(t))});d.appendChild(pl);
   if(A.head)d.appendChild(el("h3",null,A.head));var ol=el("ol");A.tl.forEach(function(r){var li=el("li",r.g?"gone":null);li.appendChild(el("b",null,r.y));li.appendChild(el("span",null,r.n));li.appendChild(el("i",null,r.t));ol.appendChild(li)});d.appendChild(ol)}
-function abApply(){if(ORB.abEl){orbAbFill(ORB.abEl);orbAbSize()}}
+function abApply(){if(ORB.abEl){orbAbFill(ORB.abEl);orbAbSize()}if(ABV.tx)orbAbFill(ABV.tx)}
+/* About page over Wall and Scroll: the same copy and photos as Orbit's About, laid out as a page */
+var ABV={el:null,tx:null};
+function abvBuild(){if(ABV.el)return;var d=el("section","abv"),inn=el("div","in"),L=el("div"),bk=el("button","bk","← Back to the work"),tx=el("div"),ph=el("div","abp");
+  d.id="abv";d.setAttribute("aria-label","About");bk.type="button";bk.onclick=function(){abvToggle(false)};L.appendChild(bk);L.appendChild(tx);
+  MEPICS.forEach(function(n){var im=el("img");im.alt="";im.loading="lazy";im.decoding="async";im.src="about/"+n+".jpg";ph.appendChild(im)});
+  inn.appendChild(L);inn.appendChild(ph);d.appendChild(inn);["keydown","wheel"].forEach(function(t){d.addEventListener(t,function(e){if(e.key!=="Escape")e.stopPropagation()})});
+  document.body.insertBefore(d,document.getElementById("bar"));ABV.el=d;ABV.tx=tx;ABV.bk=bk}
+function abvToggle(on2){var cur=document.body.classList.contains("abon");if(on2==null)on2=!cur;if(on2===cur)return;
+  if(on2){abvBuild();orbAbFill(ABV.tx);closeSheets();if(bigI>=0)closeBig(true);if(document.body.classList.contains("fopen"))filt(false)}
+  document.body.classList.toggle("abon",on2);var a=document.querySelector('#bar a[href*="#about"]');if(a)a.setAttribute("aria-pressed",on2);
+  if(on2){ABV.el.scrollTop=0;ABV.bk.focus({preventScroll:true})}else if(SCV.on)scvWake()}
+addEventListener("keydown",function(e){if(e.key==="Escape"&&document.body.classList.contains("abon")&&bigI<0)abvToggle(false)});
 function orbAbBuild(){if(ORB.abEl)return;var d=el("section","orbab");d.setAttribute("aria-label","About");orbAbFill(d);
   ORB.abEl=d;document.body.insertBefore(d,document.getElementById("bar"));
   ORB.ab.ims=MEPICS.map(function(n){var im=new Image();var o={im:im,ar:.75,ok:false,cur:{x:innerWidth/2,y:innerHeight/2,s:0,a:0}};im.onload=function(){o.ok=true;o.ar=im.naturalWidth/im.naturalHeight;orbAbLay();orbWake()};im.src="about/"+n+".jpg";return o})}
@@ -1305,7 +1332,7 @@ function orbDraw(){ORB.raf=0;if(!ORB.on)return;var now=performance.now(),dt=Math
 function orbWake(){ORB.lastAct=performance.now();if(ORB.on&&!ORB.raf){ORB.last=performance.now();ORB.raf=requestAnimationFrame(orbDraw)}}
 function orbSize(){if(!ORB.cv)return;var d=Math.min(2,devicePixelRatio||1);ORB.dpr=d;ORB.cv.width=innerWidth*d;ORB.cv.height=innerHeight*d;orbWake()}
 function orbHit(px,py){var best=-1,bz=-1;items.forEach(function(it){var p=ORB.cur[it.i];if(!p||p.a<.5||!p.w)return;if(Math.abs(px-p.x)<=p.w/2&&Math.abs(py-p.y)<=p.h/2){var z=p.s;if(z>bz){bz=z;best=it.i}}});return best}
-function orbToggle(on2){if(on2==null)on2=!ORB.on;if(on2===ORB.on)return;if(on2){filt(false);closeSheets();if(bigI>=0)closeBig(true);if(PV)exitPicks()}
+function orbToggle(on2){if(on2==null)on2=!ORB.on;if(on2===ORB.on)return;if(on2){filt(false);closeSheets();if(bigI>=0)closeBig(true);if(PV)exitPicks();document.body.classList.remove("abon")}
   ORB.on=on2;document.body.classList.toggle("orbit",on2);setTimeout(vswSync,0);var b=document.getElementById("orbbtn");b.textContent=on2?"Wall":"Orbit";b.setAttribute("aria-pressed",on2);
   if(on2){if(!ORB.cv){var cv=document.createElement("canvas");cv.className="orb";cv.setAttribute("aria-label","Orbit view: pictures grouped by what they show");ORB.cv=cv;ORB.x=cv.getContext("2d");document.body.insertBefore(cv,document.getElementById("bar"));
       var pj=el("nav","orbpj");pj.setAttribute("aria-label","Projects");pj.id="orbpj";ORB.pjEl=pj;document.body.insertBefore(pj,document.getElementById("bar"));orbEvents(cv);
@@ -1354,7 +1381,7 @@ function orbEvents(cv){var pts=ORB.ptr,pinch=null;
 document.getElementById("orbbtn").onclick=function(){orbToggle()};
 /* ---- views: Orbit, Wall, Scroll ---- */
 function curView(){return SCV.on?"scroll":ORB.on?"orbit":"wall"}
-function setView(v){if(v===curView())return;if(bigI>=0)closeBig(true);if(v==="scroll"){if(ORB.on)orbToggle(false);scvToggle(true)}else{scvToggle(false);orbToggle(v==="orbit")}vswSync()}
+function setView(v){abvToggle(false);if(v===curView())return;if(bigI>=0)closeBig(true);if(v==="scroll"){if(ORB.on)orbToggle(false);scvToggle(true)}else{scvToggle(false);orbToggle(v==="orbit")}vswSync()}
 function vswFill(box){box.innerHTML="";[["orbit","Orbit"],["wall","Wall"],["scroll","Scroll"]].forEach(function(v){var b=el("button",null,v[1]);b.type="button";b.dataset.v=v[0];b.setAttribute("aria-pressed",curView()===v[0]);b.onclick=function(){setView(v[0])};box.appendChild(b)})}
 function vswSync(){document.querySelectorAll(".vsw button,.orbpj .vt button").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.v===curView())})}
 /* ---- Scroll: an endless stream, section by section. Each section is one project and one subject (up to 9 pictures);
@@ -1427,7 +1454,7 @@ function scvToggle(on2){if(on2===SCV.on)return;SCV.on=on2;document.body.classLis
   if(on2){if(!SCV.el)scvInit();if(!SCV.groups)scvReset();closeSheets();vscan();pump();scvWake()}
   else if(SCV.el)SCV.el.querySelectorAll("video").forEach(function(v){v.pause()});vswSync()}
 vswFill(document.getElementById("vsw"));
-(function(){var ab=document.querySelector('#bar a[href*="#about"]');if(ab)ab.addEventListener("click",function(e){if(e.metaKey||e.ctrlKey||e.shiftKey)return;e.preventDefault();if(bigI>=0)closeBig(true);orbAbout(true)})})();
+(function(){var ab=document.querySelector('#bar a[href*="#about"]');if(ab)ab.addEventListener("click",function(e){if(e.metaKey||e.ctrlKey||e.shiftKey)return;e.preventDefault();if(bigI>=0)closeBig(true);if(ORB.on)orbAbout(true);else abvToggle()})})();
 
 /* ---- editing. Edits live in the artifact's database (items/<id>, projects/<key>, notes/<id>) and are laid over wall.json.
    Only the owner and editors see the Edit button; everyone signed in sees the edits. ---- */
