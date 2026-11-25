@@ -550,6 +550,16 @@ function music(auto){var vw=innerWidth,vh=innerHeight-barH();var w=win("music","
   function setVol(){if(gn)gn.gain.value=SND.v;try{a.volume=Math.max(0,Math.min(1,fk*(gn?1:SND.v)))}catch(_){}}
   function keepSnd(){try{localStorage.setItem("lm-desk-snd",JSON.stringify(SND))}catch(_){}}
   function touch(){wake()}addEventListener("pointerdown",touch,true);addEventListener("keydown",touch,true);
+  /* the music stops when nobody can see the desk: the tab is in the background, the page is put away, or the frame it lives in is closed or hidden while still loaded.
+     Three checks, because a hidden frame is not always told: the page's own visibility, whether any of it is on screen, and whether the screen is still being drawn at all. It picks up again when the desk is back */
+  var held=false,out=false,seen=performance.now(),tkR=0,wd=0,io=null;
+  function hold(){if(!a.paused){held=true;a.pause()}}
+  function unhold(){if(held&&!out&&document.visibilityState==="visible"){held=false;a.play().catch(function(){})}}
+  function vis(){if(document.visibilityState==="visible")unhold();else hold()}
+  document.addEventListener("visibilitychange",vis);addEventListener("pagehide",hold);addEventListener("pageshow",vis);
+  (function tk(){tkR=requestAnimationFrame(tk);seen=performance.now();if(held)unhold()})();
+  wd=setInterval(function(){if(!a.paused&&performance.now()-seen>2500)hold()},1000);
+  if(window.IntersectionObserver){io=new IntersectionObserver(function(es){out=!es[es.length-1].isIntersecting;if(out)hold();else unhold()});io.observe(document.documentElement)}
   var volRow=el("div","vol"),vf=fader(false,0,1,SND.v,"Volume",function(v){SND.v=v;wake();setVol();keepSnd()}),eq=el("div","eq"),efs=[];volRow.appendChild(el("span",null,"Volume"));volRow.appendChild(vf);
   FREQ.forEach(function(f,i){var b=el("div","b"),fd=fader(true,-12,12,SND.eq[i],FNAME[i]+" hertz",function(v){SND.eq[i]=Math.abs(v)<.6?0:Math.round(v*10)/10;wake();if(flt[i])flt[i].gain.value=SND.eq[i];keepSnd()});efs.push(fd);b.appendChild(fd);b.appendChild(el("span",null,FNAME[i]));eq.appendChild(b)});
   var flat=el("button",null,"Flat");flat.type="button";flat.onclick=function(){SND.eq=[0,0,0,0,0];efs.forEach(function(fd){fd.set(0)});flt.forEach(function(b){b.gain.value=0});keepSnd()};eq.appendChild(flat);cv.width=320;cv.height=64;cv.setAttribute("role","img");
@@ -569,12 +579,12 @@ function music(auto){var vw=innerWidth,vh=innerHeight-barH();var w=win("music","
       addEventListener("pointerdown",f,true);addEventListener("keydown",f,true)})}
   a.addEventListener("play",function(){wait=false;pp.textContent="Pause";loop()});a.addEventListener("pause",function(){pp.textContent="Play";cancelAnimationFrame(raf);lv=[];pk=[];paint();viz()});
   a.addEventListener("ended",function(){load(cur+1,true)});a.addEventListener("loadedmetadata",paint);a.addEventListener("error",function(){if(cur>-1)tm.textContent="Will not play"});
-  pp.onclick=function(){if(!TRK||!TRK.length)return;if(a.paused){var p=a.play();if(p&&p.catch)p.catch(function(){})}else a.pause()};pv.onclick=function(){if(TRK&&TRK.length)load(a.currentTime>3?cur:cur-1,!a.paused||a.currentTime>0)};nx.onclick=function(){if(TRK&&TRK.length)load(cur+1,!a.paused||a.currentTime>0)};
+  pp.onclick=function(){held=false;if(!TRK||!TRK.length)return;if(a.paused){var p=a.play();if(p&&p.catch)p.catch(function(){})}else a.pause()};pv.onclick=function(){if(TRK&&TRK.length)load(a.currentTime>3?cur:cur-1,!a.paused||a.currentTime>0)};nx.onclick=function(){if(TRK&&TRK.length)load(cur+1,!a.paused||a.currentTime>0)};
   cv.addEventListener("pointerdown",function(e){if(cur<0)return;cv.setPointerCapture(e.pointerId);function seek(ev){var r=cv.getBoundingClientRect(),f=Math.max(0,Math.min(.999,(ev.clientX-r.left)/r.width));try{a.currentTime=f*dur()}catch(_){}paint()}
     function up(){cv.removeEventListener("pointermove",seek);cv.removeEventListener("pointerup",up);cv.removeEventListener("pointercancel",up)}seek(e);cv.addEventListener("pointermove",seek);cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up)});
   function ready(){if(wins.indexOf(w)<0)return;if(!TRK.length){ti.textContent="No music on this disk";return}
     TRK.forEach(function(t,i){var li=el("li"),b=el("button");b.type="button";b.appendChild(el("span",null,i+1+"."));b.appendChild(el("span",null,t.n));b.appendChild(el("span",null,mmss(t.s)));b.onclick=function(){load(i,true)};li.appendChild(b);ol.appendChild(li)});load(0,auto?2:false)}
-  w.onclose=function(){cancelAnimationFrame(raf);removeEventListener("pointerdown",touch,true);removeEventListener("keydown",touch,true);a.pause();a.removeAttribute("src");a.load();if(AC)AC.close().catch(function(){})};paint();viz();
+  w.onclose=function(){cancelAnimationFrame(raf);cancelAnimationFrame(tkR);clearInterval(wd);if(io)io.disconnect();document.removeEventListener("visibilitychange",vis);removeEventListener("pagehide",hold);removeEventListener("pageshow",vis);removeEventListener("pointerdown",touch,true);removeEventListener("keydown",touch,true);a.pause();a.removeAttribute("src");a.load();if(AC)AC.close().catch(function(){})};paint();viz();
   if(TRK)ready();else fetch("music/tracks.json",{cache:"no-cache"}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(t){TRK=t},function(){TRK=[]}).then(ready)}
 
 /* ---- Notes: a small word processor. Each note is a window left on the desk. The owner's are seen by everyone; anyone else's stay on their own device.
