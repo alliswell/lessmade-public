@@ -458,7 +458,7 @@ function orbit(){if(OB&&wins.indexOf(OB)>-1){front(OB);return}
   bar.setAttribute("role","group");bar.setAttribute("aria-label","Pull one project out of orbit");w.el.insertBefore(bar,w.st);
   /* choosing a project pulls its pictures out of every orbit and gathers them, flat and face-on, in the empty middle of the galaxy; the rest shrink to points of light. "All" sends them home */
   function chipsO(){bar.textContent="";[["","All"]].concat(PROJ.filter(function(p){return tiles.some(function(T){return T.it.p===p[0]})})).forEach(function(p){var b=el("button",null,p[1]);b.type="button";b.setAttribute("aria-pressed",p[0]===fil);b.setAttribute("aria-selected",p[0]===fil);b.onclick=function(){setFil(p[0])};bar.appendChild(b)})}
-  function setFil(p){if(F){F.out=true}fil=p;filT=performance.now();vx=vy=0;var l=tiles.filter(function(T){return p&&T.it.p===p}),area=0;tiles.forEach(function(T){T.in=false});
+  function setFil(p){if(F){F.out=true}fil=p;filT=performance.now();vx=vy=0;var l=tiles.filter(function(T){return p&&T.it.p===p}),area=0;tiles.forEach(function(T){T.in=false});sys.forEach(function(S){S.k=0});l.forEach(function(T){T.S.k++});
     l.sort(function(a,b){return (b.it.l?1:0)-(a.it.l?1:0)}).forEach(function(T,i){var d=T.s*1.3+5;area+=d*d*1.25;T.fr=i?Math.sqrt(area/Math.PI)-d*.25:0;T.fa=i*2.39996;T.dly=Math.min(.9,i*.004);T.in=true});
     FO.R=(l.length?l[l.length-1].fr:60)+34;FO.n=l.length;FO.x=sys.length<2&&sys[0]?sys[0].R+FO.R+60:0;FO.y=0;to=p?{x:FO.x,y:FO.y,z:Math.min(cw,ch)/(2*FO.R)*.9}:{x:home.x,y:home.y,z:home.z};chipsO()}
   for(var i=0;i<260;i++)stars.push([Math.random(),Math.random(),Math.random()<.3?.45:.2,Math.random()*6.28,Math.random()<.12?2:1]);
@@ -483,7 +483,7 @@ function orbit(){if(OB&&wins.indexOf(OB)>-1){front(OB);return}
     x.strokeStyle="#fff";x.lineWidth=1;
     sys.forEach(function(S){S.ang+=S.w*dt;S.w*=.965;var X=(S.x-cam.x)*z+cw/2,Y=(S.y-cam.y)*z+ch/2,RR=S.R*z,ep=S.ph*(1-op);S.sx=X;S.sy=Y;S.et=S.tl+(1-S.tl)*op;S.e1=Math.cos(ep);S.e2=Math.sin(ep);S.on=!(X+RR<0||X-RR>cw||Y+RR<0||Y-RR>ch);if(!S.on)return;
       x.setLineDash([1,4]);S.rings.forEach(function(R){if(R*z<7)return;x.beginPath();x.ellipse(X,Y,R*z,R*z*S.et,ep,0,6.2832);x.stroke()});x.setLineDash([])});
-    hov=null;x.imageSmoothingEnabled=OPT.colour;
+    var was=hov;hov=null;x.imageSmoothingEnabled=OPT.colour;
     tiles.forEach(function(T){var tg=T.in?1:0;if(T.m!==tg&&mt>=T.dly){T.m+=(tg-T.m)*(CALM?1:.15);if(Math.abs(tg-T.m)<.004)T.m=tg}});
     function pass(kind){tiles.forEach(function(T){var S=T.S,far=T.m>=.5;if(far!==(kind===2)||(!S.on&&T.m<.004))return;var a=T.a+T.v*tt+S.ang,dz=Math.sin(a);if(!far&&(dz>=0)!==(kind===1))return;T.q=null;
       var u=Math.cos(a)*T.R,v=dz*T.R*S.et,dp=dz*T.R/S.R*(1-op*.6),px=(S.x+u*S.e1-v*S.e2-cam.x)*z+cw/2+lx*dp,py=(S.y+u*S.e2+v*S.e1-cam.y)*z+ch/2+ly*dp,sz=T.s*z*(1+.36*(1-.8*op)*dz);
@@ -496,15 +496,21 @@ function orbit(){if(OB&&wins.indexOf(OB)>-1){front(OB);return}
       if(tex)x.drawImage(tex,L,Tp,tw,th);else{x.fillStyle="#000";x.fillRect(L,Tp,tw,th);x.strokeRect(L+.5,Tp+.5,tw-1,th-1);if(sz>=9&&asked<6){asked++;need(it)}}
       if(sz>=20&&tex&&!(it.a&&OPT.colour))x.strokeRect(L-.5,Tp-.5,tw+1,th+1);
       if(!F&&mouse&&mouse[0]>=L-2&&mouse[0]<=L+tw+2&&mouse[1]>=Tp-2&&mouse[1]<=Tp+th+2)hov=T})}
-    pass(0);x.fillStyle="#fff";sys.forEach(function(S){if(!S.on)return;var X=Math.round(S.sx),Y=Math.round(S.sy);x.fillRect(X-1,Y-5,2,10);x.fillRect(X-5,Y-1,10,2);x.fillRect(X-2,Y-2,4,4)});pass(1);pass(2);
+    /* node lines: every picture pulled out of orbit stays tied by a dotted line to the middle of the system it came from */
+    function links(){if(!fil)return;var n=0,hp=null;x.strokeStyle="#fff";x.lineWidth=1;x.setLineDash([1,5]);x.beginPath();
+      tiles.forEach(function(T){if(T.m<.02)return;var S=T.S,a=T.a+T.v*tt+S.ang,dz=Math.sin(a),u=Math.cos(a)*T.R,v=dz*T.R*S.et,dp=dz*T.R/S.R*(1-op*.6),px=(S.x+u*S.e1-v*S.e2-cam.x)*z+cw/2+lx*dp,py=(S.y+u*S.e2+v*S.e1-cam.y)*z+ch/2+ly*dp,e=T.m*T.m*(3-2*T.m);
+        px+=((FO.x+Math.cos(T.fa+rot)*T.fr-cam.x)*z+cw/2-px)*e;py+=((FO.y+Math.sin(T.fa+rot)*T.fr-cam.y)*z+ch/2-py)*e;if(T===was)hp=[px,py];x.moveTo(Math.round(S.sx)+.5,Math.round(S.sy)+.5);x.lineTo(Math.round(px)+.5,Math.round(py)+.5);n++});
+      if(n)x.stroke();x.setLineDash([]);if(hp){x.lineWidth=2;x.beginPath();x.moveTo(was.S.sx,was.S.sy);x.lineTo(hp[0],hp[1]);x.stroke();x.lineWidth=1}}
+    pass(0);x.fillStyle="#fff";sys.forEach(function(S){if(!S.on)return;var X=Math.round(S.sx),Y=Math.round(S.sy);x.fillRect(X-1,Y-5,2,10);x.fillRect(X-5,Y-1,10,2);x.fillRect(X-2,Y-2,4,4)});pass(1);links();pass(2);
     x.imageSmoothingEnabled=false;
     if(!fil)sys.forEach(function(S){var RR=S.R*z;if(S.sx+RR<0||S.sx-RR>cw||S.sy+RR<0||S.sy-RR>ch)return;cvLabel(x,cw,ch,S.n.toUpperCase()+"  "+S.c,S.sx,S.sy-RR-12,true)});
+    if(fil&&mt>.5)sys.forEach(function(S){if(S.k&&S.sx>2&&S.sx<cw-2&&S.sy>8&&S.sy<ch-44)cvLabel(x,cw,ch,S.n.toUpperCase()+"  "+S.k,S.sx,S.sy+17,false)});
     if(fil&&mt>.5)cvLabel(x,cw,ch,nm(PROJ,fil).toUpperCase()+"  "+FO.n,(FO.x-cam.x)*z+cw/2,(FO.y-cam.y)*z+ch/2-FO.R*z-12,true);
     if(hov&&hov.q){var q2=hov.q;x.lineWidth=2;x.strokeRect(q2[0]-3,q2[1]-3,q2[2]+6,q2[3]+6);x.lineWidth=1;cvLabel(x,cw,ch,hov.it.c,q2[0]+q2[2]/2,q2[1]+q2[3]+14,false)}
     var near=null;sys.forEach(function(S){if(Math.hypot(S.x-cam.x,S.y-cam.y)<S.R)near=S});
     var co="X "+Math.round(cam.x)+"  Y "+Math.round(-cam.y)+"  ×"+(z/home.z).toFixed(1);x.font="500 12px 'Pixelify Sans',sans-serif";x.fillStyle="#000";x.fillRect(4,ch-20,Math.ceil(x.measureText(co).width)+8,16);x.fillStyle="#fff";x.textBaseline="middle";x.fillText(co,8,ch-11);
     if(F){fcDraw(x,cw,ch,F);if(F.out&&F.k<.03){fcEnd(F);F=null}}
-    var say=F?F.it.c+" · "+nm(PROJ,F.it.p)+" · click to put it back":hov?hov.it.c+" · "+nm(PROJ,hov.it.p):fil?nm(PROJ,fil)+": "+plural(FO.n,"picture")+" pulled out of orbit. All sends them back.":near?"Sector: "+near.n+" · "+plural(near.c,"picture"):z<=home.z*1.15?plural(tiles.length,"picture")+" in "+plural(sys.length,"system")+". Click one to fly in.":"Deep space";
+    var say=F?F.it.c+" · "+nm(PROJ,F.it.p)+" · click to put it back":hov?hov.it.c+" · "+(fil&&hov.in?"from "+hov.S.n:nm(PROJ,hov.it.p)):fil?nm(PROJ,fil)+": "+plural(FO.n,"picture")+" pulled out of orbit. All sends them back.":near?"Sector: "+near.n+" · "+plural(near.c,"picture"):z<=home.z*1.15?plural(tiles.length,"picture")+" in "+plural(sys.length,"system")+". Click one to fly in.":"Deep space";
     if(say!==said){said=say;rd.textContent=say}cv.classList.toggle("pk",!F&&!!hov&&!!hov.q&&Math.max(hov.q[2],hov.q[3])>=11);cv.classList.toggle("fo",!!F)}
   function at(e){var r=cv.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top]}
   function zoomAt(f,mx,my){to=null;var z2=Math.max(home.z*.6,Math.min(9,cam.z*f)),wx=cam.x+(mx-cw/2)/cam.z,wy=cam.y+(my-ch/2)/cam.z;cam.z=z2;cam.x=wx-(mx-cw/2)/z2;cam.y=wy-(my-ch/2)/z2}
