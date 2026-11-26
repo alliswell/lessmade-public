@@ -386,7 +386,7 @@ body.qedit .ed{display:flex;left:auto;width:var(--qw);border-left:1px solid var(
 <script>
 var PROJ=[["brother-moto","Brother Moto"],["switchyards","Switchyards"],["8bit","8bit"],["polar-notion","Polar Notion"],["st-andre","St. André"],["untitled","Untitled"]];
 /* filter groups: what kind of work it is. "design"/"personal" pick a whole side. */
-var CATS=[["brand","Brand","design"],["product","Product","design"],["interior","Interior","design"],["memories","Memories","personal"],["inspiration","Inspiration","personal"],["fun","For fun","personal"]];
+var CATS=[["brand","Brand","design"],["product","Product","design"],["interior","Spatial","design"],["memories","Memories","personal"],["inspiration","Inspiration","personal"],["fun","For fun","personal"]];
 var SIDES=[["design","Design"],["personal","Personal"]];
 /* what every view opens on: products and interiors, with the strongest brand pieces every third picture.
    STRONG is in order, best first. Change it to change what leads. */
@@ -1391,7 +1391,7 @@ var SCV={on:false,el:null,groups:null,next:0,n:0,io:null,io2:null,vio:null,fio:n
 function scvGroups(){var by={};PROJ.forEach(function(x){by[x[0]]=[]});
   /* unfiltered, it opens on sections of products, interiors and strong brand pieces in turn (until those run out) */
   var lead=[],used=new Set();if(!active()){var L=leadPools(items.filter(function(it){return !it.hide&&by[it.p]}));
-    while(L.B.length&&(L.P.length||L.I.length))[["I","Interior"],["B","Brand"],["P","Product"]].forEach(function(k){var its=L[k[0]].splice(0,9);if(its.length){lead.push({p:"",pn:"",t:k[1],its:its});its.forEach(function(x){used.add(x)})}})}
+    while(L.B.length&&(L.P.length||L.I.length))[["I","Spatial"],["B","Brand"],["P","Product"]].forEach(function(k){var its=L[k[0]].splice(0,9);if(its.length){lead.push({p:"",pn:"",t:k[1],its:its});its.forEach(function(x){used.add(x)})}})}
   items.forEach(function(it){if(it.hide||!(by[it.p])||used.has(it))return;if(active()&&!on(it))return;by[it.p].push(it)});
   var queues=PROJ.map(function(x){var list=by[x[0]],sub={},order=[];
     /* one run of sections per filter group, in filter order; inside a group, like subjects sit together */
