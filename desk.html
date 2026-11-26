@@ -109,6 +109,8 @@ canvas,img{image-rendering:pixelated}
 /* music */
 .mu .now{display:flex;justify-content:space-between;gap:10px;padding:6px 8px 4px;white-space:nowrap}.mu .now b{font-weight:700;overflow:hidden;text-overflow:ellipsis}
 .mu canvas{display:block;width:320px;max-width:100%;height:auto;margin:0 auto;border-top:1px solid var(--k);border-bottom:1px solid var(--k);touch-action:none;cursor:ew-resize}
+.mu .now .mn{flex:none;width:22px;height:20px;border:2px solid var(--k);font-size:12px;line-height:1;margin-left:2px}.mu .now .mn:active{background:var(--k);color:var(--w)}.mu .now b{flex:1;min-width:0}
+.mu.mini canvas,.mu.mini .vol,.mu.mini .tl,.mu.mini .eq{display:none}.mu.mini .ctl{padding:6px 8px 8px}
 .mu canvas.vz{touch-action:manipulation;cursor:pointer;border-bottom:0;background:var(--k)}
 .ctl{display:flex;justify-content:center;gap:10px;padding:10px 8px}.ctl button{min-width:56px;padding:5px 10px}
 .tl{list-style:none;margin:0;padding:0;border-top:2px solid var(--k)}
@@ -172,6 +174,10 @@ canvas,img{image-rendering:pixelated}
 .edw .bt{border:2px solid var(--k);padding:3px 10px;font-weight:700;background:var(--w);text-align:center}.edw .bt.arm,.edw .bt:active{background:var(--k);color:var(--w)}.edw .bt:disabled{background:var(--lite)}
 .eds{flex:none;padding:3px 8px;border-top:2px solid var(--k);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:639px){.edw{flex-direction:column}.edl{width:auto;max-height:40%;border-right:0;border-bottom:2px solid var(--k)}}
+/* picture tools */
+.tls{flex:1;min-height:160px;position:relative;background:var(--dark);overflow:hidden;touch-action:none}
+.tls canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:auto}.tls canvas.o{object-fit:fill;pointer-events:none}
+.tbar .fd{flex:none;width:96px}.tbar button:disabled{background:var(--lite)}
 /* media player */
 .ms{flex:1;min-height:120px;position:relative;background:var(--k);overflow:hidden}
 .ms video,.ms canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.ms canvas{image-rendering:pixelated}
@@ -612,17 +618,21 @@ function media(){var ex=wins.find(function(q){return q.key==="media"});if(ex){fr
    whose files sit in the artifact's asset store. Everyone who opens the artifact sees them at once; golive.py bakes the "items" changes into the live site
    (dump "items" to site-build/edits/deskitems first). Added pictures reach the live site once their files are pulled into the work folders and add.py is run. ---- */
 var ED={db:null,can:false,as:null,ov:{},add:{},raw:{},all:[],tm:0,icon:null,place:null,win:null},EDF=["c","d","yr","place","p","g"];
-function edBase(it){ED.raw[it.id]={c:it.c||"",d:it.d||"",yr:it.yr||"",place:it.place||"",p:it.p,g:it.g,l:it.l?1:0,hide:it.hide?1:0}}
-function edApply(id){var it=BY[id],r=ED.raw[id],o=ED.ov[id]||{};if(!it||!r)return false;var was=[it.p,it.g,it.l?1:0,it.hide?1:0].join();
+function edBase(it){ED.raw[it.id]={c:it.c||"",d:it.d||"",yr:it.yr||"",place:it.place||"",p:it.p,g:it.g,l:it.l?1:0,hide:it.hide?1:0,w:it.w,h:it.h,a:it.a?1:0}}
+var HEX=/^[0-9a-f]{32}$/;
+function edFresh(it){PEND[it.id]=null;it._hi=null;it._ob=null;it._obq=0;it._wl=null;it._wq=""}
+function edApply(id){var it=BY[id],r=ED.raw[id],o=ED.ov[id]||{};if(!it||!r)return false;var was=[it.p,it.g,it.l?1:0,it.hide?1:0,it.u||""].join();
+  if(HEX.test(o.ua||"")&&HEX.test(o.ta||"")){var nu="/_blob/"+o.ua;if(it.u!==nu){it.u=nu;it.tu="/_blob/"+o.ta;it.w=Math.max(1,+o.w||r.w);it.h=Math.max(1,+o.h||r.h);if(o.al)it.a=1;else delete it.a;edFresh(it)}}
+  else if(it.u){delete it.u;delete it.tu;it.w=r.w;it.h=r.h;if(r.a)it.a=1;else delete it.a;edFresh(it)}
   EDF.forEach(function(k){var v=o[k]!=null&&String(o[k]).trim()!==""?String(o[k]):r[k];if(v)it[k]=v;else delete it[k]});
   if(!PROJ.some(function(x){return x[0]===it.p}))it.p=r.p;if(!GRP.some(function(x){return x[0]===it.g}))it.g=r.g;
   if(o.lead==="y"||(o.lead!=="n"&&r.l))it.l=1;else delete it.l;if(o.hide===true||r.hide)it.hide=1;else delete it.hide;
-  return was!==[it.p,it.g,it.l?1:0,it.hide?1:0].join()}
+  return was!==[it.p,it.g,it.l?1:0,it.hide?1:0,it.u||""].join()}
 function edAdded(id,v){var it=BY[id];if(!v){if(it&&it.add){ED.all=ED.all.filter(function(x){return x!==it});delete BY[id];delete ED.raw[id]}return}
   if(!/^[0-9a-f]{32}$/.test(v.ua||"")||!/^[0-9a-f]{32}$/.test(v.ta||""))return;if(it&&!it.add)return;if(!it){it={id:id,add:1,t:[],s:[]};ED.all.push(it);BY[id]=it}
   it.c=String(v.c||"Untitled").slice(0,200);["d","yr","place"].forEach(function(k){if(v[k])it[k]=String(v[k]).slice(0,2000);else delete it[k]});
   it.p=PROJ.some(function(x){return x[0]===v.p})?v.p:"untitled";it.g=GRP.some(function(x){return x[0]===v.g})?v.g:"brand";it.w=Math.max(1,+v.w||800);it.h=Math.max(1,+v.h||800);
-  if(v.lead==="y")it.l=1;else delete it.l;if(v.hide===true)it.hide=1;else delete it.hide;it.tu="/_blob/"+v.ta;it.u="/_blob/"+v.ua;if(/^[0-9a-f]{32}$/.test(v.va||""))it.v=it.vs="/_blob/"+v.va;PEND[id]=null;ED.raw[id]={add:1}}
+  if(v.lead==="y")it.l=1;else delete it.l;if(v.hide===true)it.hide=1;else delete it.hide;if(v.al)it.a=1;else delete it.a;if(it.u!=="/_blob/"+v.ua)edFresh(it);it.tu="/_blob/"+v.ta;it.u="/_blob/"+v.ua;if(/^[0-9a-f]{32}$/.test(v.va||""))it.v=it.vs="/_blob/"+v.va;ED.raw[id]={add:1}}
 function edSync(){D.items=ED.all.filter(function(it){return !it.hide});clearTimeout(ED.tm);ED.tm=setTimeout(function(){refill();if(ED.win&&ED.win.list)ED.win.list()},500)}
 function edInit(db){ED.db=db;
   db.collection("items").onSnapshot(function(s){var st=false;s.docChanges().forEach(function(ch){var id=ch.doc.id;if(ED.win&&ED.win.busy===id)return;if(ch.type==="removed")delete ED.ov[id];else ED.ov[id]=ch.doc.data()||{};if(edApply(id))st=true});if(st)edSync();else if(ED.win&&ED.win.list)ED.win.list()},function(){});
@@ -648,13 +658,14 @@ function editor(){if(!ED.can)return;var ex=wins.find(function(q){return q.key===
     ld.type=hd.type="checkbox";ld.checked=!!it.l;hd.checked=!!it.hide;lk.appendChild(ld);lk.appendChild(el("span",null,"Lead: finished work, shown large"));hk.appendChild(hd);hk.appendChild(el("span",null,"Hidden from everyone but this Editor"));R.appendChild(lk);R.appendChild(hk);
     function keep(){clearTimeout(tm);tm=0;if(cur!==it)return;var o,p;
       if(it.add){o=Object.assign({},ED.add[it.id]||{},{c:c.value.trim()||"Untitled",d:d.value.trim(),yr:yr.value.trim(),place:pl.value.trim(),p:pj.value,g:gp.value,lead:ld.checked?"y":"n",hide:hd.checked});ED.add[it.id]=o;edAdded(it.id,o);p=ED.db.doc("added/"+it.id).set(o)}
-      else{o={};[["c",c],["d",d],["yr",yr],["place",pl],["p",pj],["g",gp]].forEach(function(x){var v=x[1].value.trim();if(v!==(r[x[0]]||""))o[x[0]]=v});if(ld.checked!==!!r.l)o.lead=ld.checked?"y":"n";if(hd.checked&&!r.hide)o.hide=true;
+      else{o={};var prev=ED.ov[it.id]||{};["ua","ta","w","h","al"].forEach(function(k){if(prev[k]!=null)o[k]=prev[k]});[["c",c],["d",d],["yr",yr],["place",pl],["p",pj],["g",gp]].forEach(function(x){var v=x[1].value.trim();if(v!==(r[x[0]]||""))o[x[0]]=v});if(ld.checked!==!!r.l)o.lead=ld.checked?"y":"n";if(hd.checked&&!r.hide)o.hide=true;
         if(Object.keys(o).length){ED.ov[it.id]=o;p=ED.db.doc("items/"+it.id).set(o)}else{delete ED.ov[it.id];p=ED.db.doc("items/"+it.id).delete()}edApply(it.id)}
       w.busy=it.id;say("Saving…");edSync();p.then(function(){say("Saved. Everyone who opens the Desk sees it.")},function(){say("Not saved. Try again.")}).then(function(){setTimeout(function(){if(w.busy===it.id)w.busy=null},1200)})}
     [c,d,yr,pl].forEach(function(n){n.addEventListener("input",function(){w.busy=it.id;clearTimeout(tm);tm=setTimeout(keep,700)})});[pj,gp,ld,hd].forEach(function(n){n.addEventListener("change",keep)});
     function armed(b,label,fn){b.type="button";var at=0;b.onclick=function(){if(!b.classList.contains("arm")){b.classList.add("arm");b.textContent="Really?";at=setTimeout(function(){b.classList.remove("arm");b.textContent=label},3000);return}clearTimeout(at);fn()}}
     if(it.add){var rm=el("button","bt","Remove this picture");armed(rm,"Remove this picture",function(){clearTimeout(tm);var o=ED.add[it.id]||{};ED.db.doc("added/"+it.id).delete().then(function(){[o.ua,o.ta,o.va].forEach(function(a){if(a&&ED.as)ED.as.delete(a).catch(function(){})});say("Removed.")},function(){say("Could not remove it.")});delete ED.add[it.id];edAdded(it.id,null);cur=null;R.textContent="";edSync()});row.appendChild(rm)}
-    else if(ED.ov[it.id]){var bk=el("button","bt","Back to the original");armed(bk,"Back to the original",function(){clearTimeout(tm);delete ED.ov[it.id];edApply(it.id);edSync();ED.db.doc("items/"+it.id).delete().then(function(){say("Back to the original.")},function(){say("Could not undo it.")});pick(it)});row.appendChild(bk)}
+    else if(ED.ov[it.id]){var bk=el("button","bt","Back to the original");armed(bk,"Back to the original",function(){clearTimeout(tm);var old=ED.ov[it.id]||{};[old.ua,old.ta].forEach(function(a){if(a&&ED.as)ED.as.delete(a).catch(function(){})});delete ED.ov[it.id];edApply(it.id);edSync();ED.db.doc("items/"+it.id).delete().then(function(){say("Back to the original.")},function(){say("Could not undo it.")});pick(it)});row.appendChild(bk)}
+    if(!it.v){var tb=el("button","bt","Crop, cut out or draw…");tb.type="button";tb.disabled=!ED.as;tb.onclick=function(){if(tm)keep();edTools(it,function(){if(cur===it)pick(it)})};row.appendChild(tb)}
     var vb=el("button","bt","See it in the Viewer");vb.type="button";vb.onclick=function(){if(tm)keep();if(!it.hide)viewer(it.p,"",it.id)};row.appendChild(vb);R.appendChild(row);say(it.id+": changes save as you make them.")}
   /* adding: each file is uploaded with a small copy for thumbnails; a film also gets a still from its first moments */
   function shrink(src,sw,sh,max,qv){var k=Math.min(1,max/Math.max(sw,sh)),cv=document.createElement("canvas");cv.width=Math.max(1,Math.round(sw*k));cv.height=Math.max(1,Math.round(sh*k));var g=cv.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,cv.width,cv.height);g.drawImage(src,0,0,cv.width,cv.height);return new Promise(function(ok){cv.toBlob(ok,"image/jpeg",qv)})}
@@ -671,6 +682,57 @@ function editor(){if(!ED.can)return;var ex=wins.find(function(q){return q.key===
     (function next(){if(i>=fs.length){addB.disabled=false;edSync();say("Added "+plural(ok,"file")+(bad.length?". Skipped: "+bad.join("; "):"")+".");if(lastId&&BY[lastId]){ps.value="+";pick(BY[lastId])}return}
       var f=fs[i++];say("Adding "+i+" of "+fs.length+": "+f.name);one(f,i).then(function(id){ok++;lastId=id},function(e){bad.push(f.name+" "+(typeof e==="string"?e:"could not be uploaded"))}).then(next)})()};
   q.oninput=function(){w.list()};ps.onchange=function(){w.list()};w.redraw=function(){w.list()};w.onclose=function(){clearTimeout(tm);ED.win=null};w.ready();w.list()}
+
+/* ---- Picture tools, opened from the Editor: crop, cut the background out, and draw on a picture in red. Saving uploads the result (a PNG when it has see-through parts)
+   and points the picture at it; the original is untouched and "Back to the original" brings it back. The cut-out is a flood fill: it removes the colour you click,
+   or the colour around the edges, as far as it runs unbroken. It suits things shot on a plain ground, not busy scenes. ---- */
+function edTools(it,after){var ex=wins.find(function(q){return q.key==="tools"});if(ex)closeWin(ex);
+  var vw=innerWidth,vh=innerHeight-barH(),W0=Math.min(vw-(vw<640?8:24),780),w=win("tools","Picture tools",{w:W0,h:Math.min(vh-16,620),x:Math.max(4,(vw-W0)/2+16),y:14,full:true,exact:true,nost:true});if(!w)return;w.bd.classList.add("vb");
+  var bar=el("div","tbar"),sub=el("div","tbar"),stage=el("div","tls"),cv=el("canvas"),ov=el("canvas","o"),stat=el("div","eds","Loading the picture…"),x=cv.getContext("2d",{willReadFrequently:true}),og=ov.getContext("2d"),mode="",undo=[],crop=null,tol=36,pen=8,dirty=false,busy=false,W=1,H=1,PEN="#e3120b";
+  stage.appendChild(cv);stage.appendChild(ov);w.bd.appendChild(bar);w.bd.appendChild(sub);w.bd.appendChild(stage);w.bd.appendChild(stat);
+  function say(t){stat.textContent=t}
+  function B(par,label,fn){var b=el("button",null,label);b.type="button";b.onclick=fn;par.appendChild(b);return b}
+  var gm=el("span","gp"),bC=B(gm,"Crop",function(){setMode("crop")}),bE=B(gm,"Cut out",function(){setMode("cut")}),bP=B(gm,"Pen",function(){setMode("pen")});bar.appendChild(gm);
+  var bU=B(bar,"Undo",function(){var u=undo.pop();if(!u)return;W=cv.width=u.width;H=cv.height=u.height;x.putImageData(u,0,0);crop=null;draw();bU.disabled=!undo.length;say("Undone.")}),bR=B(bar,"Start over",function(){load()}),bS=B(bar,"Save",save);bU.disabled=true;
+  function snap(){undo.push(x.getImageData(0,0,W,H));if(undo.length>5)undo.shift();bU.disabled=false;dirty=true}
+  function geo(){var r=stage.getBoundingClientRect(),k=Math.min(r.width/W,r.height/H);return {r:r,k:k,ox:(r.width-W*k)/2,oy:(r.height-H*k)/2}}
+  function pt(e){var g=geo();return [Math.max(0,Math.min(W,(e.clientX-g.r.left-g.ox)/g.k)),Math.max(0,Math.min(H,(e.clientY-g.r.top-g.oy)/g.k))]}
+  function draw(){var g=geo();ov.width=Math.max(1,Math.round(g.r.width));ov.height=Math.max(1,Math.round(g.r.height));if(mode!=="crop"||!crop)return;var a=[Math.min(crop[0],crop[2]),Math.min(crop[1],crop[3]),Math.abs(crop[2]-crop[0]),Math.abs(crop[3]-crop[1])],X=g.ox+a[0]*g.k,Y=g.oy+a[1]*g.k,Ww=a[2]*g.k,Hh=a[3]*g.k;
+    og.fillStyle="rgba(0,0,0,.6)";og.fillRect(0,0,ov.width,ov.height);og.clearRect(X,Y,Ww,Hh);og.strokeStyle="#fff";og.lineWidth=2;og.strokeRect(X,Y,Ww,Hh);og.strokeStyle="#000";og.setLineDash([5,5]);og.strokeRect(X,Y,Ww,Hh);og.setLineDash([])}
+  function setMode(m){mode=mode===m?"":m;crop=null;[[bC,"crop"],[bE,"cut"],[bP,"pen"]].forEach(function(p){p[0].setAttribute("aria-pressed",mode===p[1])});sub.textContent="";sub.hidden=!mode;stage.style.cursor=mode?"crosshair":"default";
+    if(mode==="crop"){B(sub,"Apply the crop",function(){if(!crop)return;var a=[Math.round(Math.min(crop[0],crop[2])),Math.round(Math.min(crop[1],crop[3])),Math.round(Math.abs(crop[2]-crop[0])),Math.round(Math.abs(crop[3]-crop[1]))];if(a[2]<8||a[3]<8){say("That crop is too small.");return}
+        snap();var d=x.getImageData(a[0],a[1],a[2],a[3]);W=cv.width=a[2];H=cv.height=a[3];x.putImageData(d,0,0);crop=null;draw();say("Cropped to "+W+" × "+H+".")});say("Drag a box around the part to keep, then Apply the crop.")}
+    if(mode==="cut"){B(sub,"Remove the edge colour",function(){snap();var n=flood(null);say(n?"Removed the background from the edges in. Not enough? Raise Reach, or click what is left.":"Nothing matched. Raise Reach and try again.")});var l=el("label",null,"Reach");l.appendChild(fader(false,5,140,tol,"Reach: how different a colour can be and still be removed",function(v){tol=v}));sub.appendChild(l);say("Click a colour to remove it as far as it runs, or use Remove the edge colour.")}
+    if(mode==="pen"){var l2=el("label",null,"Thickness");l2.appendChild(fader(false,2,40,pen,"Pen thickness",function(v){pen=v}));sub.appendChild(l2);say("Draw on the picture. The pen is red.")}
+    if(!mode)say("Pick a tool.");draw()}
+  /* remove every pixel close to a colour, spreading from a point, or from all four edges using the colour of the corners */
+  function flood(p){var im=x.getImageData(0,0,W,H),d=im.data,seen=new Uint8Array(W*H),st=new Int32Array(W*H),n=0,sp=0,ref,T=tol*tol*3,i;
+    function px(i2){return [d[i2*4],d[i2*4+1],d[i2*4+2]]}
+    function near(i2){if(d[i2*4+3]<8)return true;var a=d[i2*4]-ref[0],b=d[i2*4+1]-ref[1],c=d[i2*4+2]-ref[2];return a*a+b*b+c*c<=T}
+    function push(i2){if(!seen[i2]){seen[i2]=1;if(near(i2))st[sp++]=i2}}
+    if(p){i=Math.min(H-1,Math.floor(p[1]))*W+Math.min(W-1,Math.floor(p[0]));ref=px(i);push(i)}
+    else{var cs=[0,W-1,(H-1)*W,H*W-1].map(px);ref=[0,1,2].map(function(k){return (cs[0][k]+cs[1][k]+cs[2][k]+cs[3][k])/4});for(i=0;i<W;i++){push(i);push((H-1)*W+i)}for(i=0;i<H;i++){push(i*W);push(i*W+W-1)}}
+    while(sp){var c2=st[--sp],cx=c2%W,cy=(c2-cx)/W;if(d[c2*4+3]>=8){d[c2*4+3]=0;n++}if(cx>0)push(c2-1);if(cx<W-1)push(c2+1);if(cy>0)push(c2-W);if(cy<H-1)push(c2+W)}
+    /* soften the cut edge by one pixel so it does not look scissored */
+    if(n)for(var y=1;y<H-1;y++)for(var X=1;X<W-1;X++){var j=y*W+X;if(d[j*4+3]>8&&(d[(j-1)*4+3]<8||d[(j+1)*4+3]<8||d[(j-W)*4+3]<8||d[(j+W)*4+3]<8))seen[j]=2}
+    if(n)for(i=0;i<W*H;i++)if(seen[i]===2)d[i*4+3]=Math.round(d[i*4+3]*.55);x.putImageData(im,0,0);return n}
+  var last=null;
+  stage.addEventListener("pointerdown",function(e){if(busy||!mode)return;var p=pt(e);try{stage.setPointerCapture(e.pointerId)}catch(_){}
+    if(mode==="crop"){crop=[p[0],p[1],p[0],p[1]];last=p}else if(mode==="pen"){snap();last=p;x.strokeStyle=x.fillStyle=PEN;x.lineCap=x.lineJoin="round";x.lineWidth=pen*Math.max(1,Math.max(W,H)/900);x.beginPath();x.arc(p[0],p[1],x.lineWidth/2,0,6.2832);x.fill()}
+    else if(mode==="cut"){snap();var n=flood(p);say(n?"Removed "+n.toLocaleString()+" pixels. Undo if it took too much.":"Nothing to remove there.")}});
+  stage.addEventListener("pointermove",function(e){if(!last)return;var p=pt(e);if(mode==="crop"){crop[2]=p[0];crop[3]=p[1];draw()}else if(mode==="pen"){x.beginPath();x.moveTo(last[0],last[1]);x.lineTo(p[0],p[1]);x.stroke();last=p}});
+  function up(){last=null}stage.addEventListener("pointerup",up);stage.addEventListener("pointercancel",up);
+  function load(){busy=true;say("Loading the picture…");full(it.id).catch(function(){return thumb(it.id)}).then(function(im){var k=Math.min(1,1600/Math.max(im.naturalWidth,im.naturalHeight));W=cv.width=Math.max(1,Math.round(im.naturalWidth*k));H=cv.height=Math.max(1,Math.round(im.naturalHeight*k));x.clearRect(0,0,W,H);x.drawImage(im,0,0,W,H);
+      try{x.getImageData(0,0,1,1)}catch(e){say("This picture cannot be edited here.");return}undo=[];bU.disabled=true;dirty=false;busy=false;crop=null;draw();say(it.c+": "+W+" × "+H+". Pick a tool.")},function(){say("The picture could not be loaded.")})}
+  function blob(c,type,qv){return new Promise(function(ok){c.toBlob(ok,type,qv)})}
+  function save(){if(busy||!ED.as||!ED.db)return;if(!dirty){say("Nothing has changed yet.");return}busy=true;say("Saving…");var d=x.getImageData(0,0,W,H).data,al=false;for(var i=3;i<d.length;i+=64)if(d[i]<250){al=true;break}
+    var k=Math.min(1,480/Math.max(W,H)),t=document.createElement("canvas");t.width=Math.max(1,Math.round(W*k));t.height=Math.max(1,Math.round(H*k));t.getContext("2d").drawImage(cv,0,0,t.width,t.height);var type=al?"image/png":"image/jpeg";
+    Promise.all([blob(t,type,.85),blob(cv,type,.92)]).then(function(b){return Promise.all([ED.as.upload(b[0]),ED.as.upload(b[1])])}).then(function(a){var olds,p,ch={ta:a[0].id,ua:a[1].id,w:W,h:H,al:al};
+      if(it.add){var o=ED.add[it.id]||{};olds=[o.ta,o.ua];o=Object.assign({},o,ch);ED.add[it.id]=o;edAdded(it.id,o);p=ED.db.doc("added/"+it.id).set(o)}
+      else{var o2=ED.ov[it.id]||{};olds=[o2.ta,o2.ua];o2=Object.assign({},o2,ch);ED.ov[it.id]=o2;edApply(it.id);p=ED.db.doc("items/"+it.id).set(o2)}
+      return p.then(function(){olds.forEach(function(id){if(id&&ED.as)ED.as.delete(id).catch(function(){})})})})
+    .then(function(){busy=false;dirty=false;edSync();say("Saved. The Desk now shows this version.");if(after)after()},function(){busy=false;say("Not saved. Try again.")})}
+  var ro=new ResizeObserver(draw);ro.observe(stage);w.onclose=function(){ro.disconnect()};sub.hidden=true;load()}
 
 /* ---- Music: a short list of tracks, each with its waveform drawn in bars ---- */
 var TRK=null;
@@ -719,7 +781,12 @@ function music(auto){var vw=innerWidth,vh=innerHeight-barH();var w=win("music","
   FREQ.forEach(function(f,i){var b=el("div","b"),fd=fader(true,-12,12,SND.eq[i],FNAME[i]+" hertz",function(v){SND.eq[i]=Math.abs(v)<.6?0:Math.round(v*10)/10;wake();if(flt[i])flt[i].gain.value=SND.eq[i];keepSnd()});efs.push(fd);b.appendChild(fd);b.appendChild(el("span",null,FNAME[i]));eq.appendChild(b)});
   var flat=el("button",null,"Flat");flat.type="button";flat.onclick=function(){SND.eq=[0,0,0,0,0];efs.forEach(function(fd){fd.set(0)});flt.forEach(function(b){b.gain.value=0});keepSnd()};eq.appendChild(flat);cv.width=320;cv.height=64;cv.setAttribute("role","img");
   pv.type=pp.type=nx.type="button";pv.setAttribute("aria-label","Previous track");nx.setAttribute("aria-label","Next track");
-  now.appendChild(ti);now.appendChild(tm);ctl.appendChild(pv);ctl.appendChild(pp);ctl.appendChild(nx);box.appendChild(now);box.appendChild(vz);box.appendChild(cv);box.appendChild(ctl);box.appendChild(volRow);box.appendChild(ol);box.appendChild(eq);w.bd.appendChild(box);setVol();
+  var mini=el("button","mn");mini.type="button";now.appendChild(ti);now.appendChild(tm);now.appendChild(mini);ctl.appendChild(pv);ctl.appendChild(pp);ctl.appendChild(nx);box.appendChild(now);box.appendChild(vz);box.appendChild(cv);box.appendChild(ctl);box.appendChild(volRow);box.appendChild(ol);box.appendChild(eq);w.bd.appendChild(box);setVol();
+  /* mini: just the track name and the three buttons. The choice is remembered; a phone starts with the mini player parked at the bottom */
+  function setMini(on,keep){box.classList.toggle("mini",on);mini.textContent=on?"▴":"▾";mini.setAttribute("aria-expanded",!on);mini.setAttribute("aria-label",on?"Show the whole player":"Shrink to a mini player");mini.title=on?"Show the whole player":"Mini player";
+    if(keep){try{localStorage.setItem("lm-desk-mini",on?"1":"0")}catch(_){}}
+    if(innerWidth<640){var H2=innerHeight-barH();w.el.style.left=Math.max(2,(innerWidth-w.el.offsetWidth)/2)+"px";w.el.style.top=(on?Math.max(4,H2-w.el.offsetHeight-12):6)+"px"}}
+  mini.onclick=function(){setMini(!box.classList.contains("mini"),true)};var mv=null;try{mv=localStorage.getItem("lm-desk-mini")}catch(_){}setMini(mv?mv==="1":innerWidth<640,false);
   function dur(){return isFinite(a.duration)&&a.duration>0?a.duration:(TRK[cur]||{}).s||1}
   /* played: solid. still to come: every other column, which reads as grey */
   function paint(){x.fillStyle="#fff";x.fillRect(0,0,320,64);var t=TRK&&TRK[cur];if(!t)return;var n=t.w.length,bw=320/n,at=Math.min(1,a.currentTime/dur())*n;x.fillStyle="#000";
