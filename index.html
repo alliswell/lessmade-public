@@ -486,7 +486,7 @@ function fcDraw(x,cw,ch,F){F.k+=((F.out?0:1)-F.k)*(CALM?1:.24);var it=F.it,k=F.k
    Drag to move, scroll or pinch to zoom, click a system to fly there, click a picture to open it right here. Nothing sits in the middle. ---- */
 var OB=null;
 function orbit(){if(OB&&wins.indexOf(OB)>-1){front(OB);return}
-  if(once("orbit","orbit","Project Orbit","The work as a galaxy to fly around",allThumbs,orbit))return;
+  if(once("orbit","orbit","Project Orbit","The work as a galaxy to fly around",firstThumbs,orbit))return;
   var vw=innerWidth,vh=innerHeight-barH(),W=Math.min(vw-(vw<640?8:24),920);
   var w=win("orbit","Project Orbit",{w:W,h:Math.min(vh-16,700),x:Math.max(4,(vw-W)/2),y:8,full:true,exact:true});if(!w)return;OB=w;w.bd.classList.add("vb");
   var cv=el("canvas","ob"),x=cv.getContext("2d"),rd=el("span","rd"),nav=el("span"),zo=el("button"),zi=el("button"),hm=el("button",null,"Whole galaxy");
@@ -576,7 +576,7 @@ function orbit(){if(OB&&wins.indexOf(OB)>-1){front(OB);return}
 
 /* ---- Wall: an endless wall, as on the main site. One loose block of every picture, repeated in every direction; drag anywhere to wander.
    Finished work is two columns wide. Scroll moves, pinch or ctrl-scroll zooms, a click opens the picture where it hangs. ---- */
-function wallApp(){if(once("wall","wall","Project Wall","Every picture on one endless wall",allThumbs,wallApp))return;var vw=innerWidth,vh=innerHeight-barH(),W=Math.min(vw-(vw<640?8:24),900);
+function wallApp(){if(once("wall","wall","Project Wall","Every picture on one endless wall",firstThumbs,wallApp))return;var vw=innerWidth,vh=innerHeight-barH(),W=Math.min(vw-(vw<640?8:24),900);
   var w=win("wall","Project Wall",{w:W,h:Math.min(vh-16,720),x:Math.max(4,(vw-W)/2-24),y:10,full:true,exact:true});if(!w)return;w.bd.classList.add("vb");
   var cv=el("canvas","ob wc"),x=cv.getContext("2d"),cnt=el("span","cnt"),chips=el("span","chips"),nav=el("span"),zo=el("button"),zi=el("button");
   zo.innerHTML=mag(false);zi.innerHTML=mag(true);zo.type=zi.type="button";zo.setAttribute("aria-label","Zoom out");zi.setAttribute("aria-label","Zoom in");zo.title="Zoom out";zi.title="Zoom in";nav.appendChild(zo);nav.appendChild(zi);
@@ -1160,15 +1160,16 @@ function savePng(c,name,say){c.toBlob(function(b){if(!b){say("The picture could 
     claude.use("downloads").then(function(dl){if(!dl){say("Saving is not available here.");return}
       return dl.save({filename:name,data:b}).then(function(){say("Saved as "+name+".")},function(er){say(er&&er.code==="declined"?"Not saved.":"It could not be saved here.")})},function(){say("Saving is not available here.")})},"image/png")}
 function planApp(){if(once("plan","plan","Floor Plan","Lay out a room, one square to the foot",function(){return [function(){return document.fonts&&document.fonts.load("700 12px 'Pixelify Sans'")}]},planApp))return;
-  var vw=innerWidth,vh=innerHeight-barH(),W0=Math.min(vw-(vw<640?8:24),720),w=win("plan","Floor Plan",{w:W0,h:Math.min(vh-16,580),x:Math.max(4,(vw-W0)/2-30),y:10,full:true,exact:true,nost:true,fixed:true});if(!w)return;w.bd.classList.add("vb");
+  var vw=innerWidth,vh=innerHeight-barH(),W0=Math.min(vw-(vw<640?8:24),720),w=win("plan","Floor Plan",{w:W0,h:Math.min(vh-16,580),x:Math.max(4,(vw-W0)/2-30),y:10,full:true,exact:true,nost:true});if(!w)return;w.bd.classList.add("vb");
   var bar=el("div","tbar"),sub=el("div","tbar"),stage=el("div","tls fp"),cv=el("canvas"),stat=el("div","eds"),g=cv.getContext("2d"),DPR=Math.min(3,window.devicePixelRatio||1),CW=1,CH=1,P=null,sel=null,undo=[],drag=null,DEF={},note="";
   PLAN.forEach(function(d){DEF[d[0]]=d});
   var dotc=document.createElement("canvas");dotc.width=dotc.height=4;(function(c){c.fillStyle="#fff";c.fillRect(0,0,4,4);c.fillStyle="#000";c.fillRect(0,0,1,1);c.fillRect(2,2,1,1)})(dotc.getContext("2d"));
   try{var o=JSON.parse(localStorage.getItem("lm-desk-plan")||"null");if(o&&o.items&&o.items.length!=null&&o.W>=12&&o.H>=12&&o.W<=120&&o.H<=120){o.items=o.items.filter(function(i){return i&&DEF[i.k]&&isFinite(i.x)&&isFinite(i.y)}).map(function(i){return {k:i.k,x:+i.x,y:+i.y,r:(i.r|0)&3}});P={W:o.W,H:o.H,items:o.items}}}catch(_){}
-  if(!P)P={W:40,H:28,eg:1,items:[["rug",31,17,0],["long",9,6,0],["long",9,15,0],["round",20,10,0],["booth",27.5,2.5,0],["booth",32.5,2.5,0],["booth",37.5,2.5,0],["couch",31,13,0],["chair",26,18,1],["chair",36,18,3],["lamp",36,13,0],
-      ["plant",38.5,26.5,0],["shelf",.5,22,1],["counter",8,27,0],["door",20,26.5,0],["t5",9,10.5,0],["t2",31,21.5,0],["t4",8,24.5,0],["t6",20,23,0]].map(function(a){return {k:a[0],x:a[1],y:a[2],r:a[3]}})};
+  var SAMPLE=[["rug",31,17,0],["long",9,6,0],["long",9,15,0],["round",20,10,0],["booth",27.5,2.5,0],["booth",32.5,2.5,0],["booth",37.5,2.5,0],["couch",31,13,0],["chair",26,18,1],["chair",36,18,3],["lamp",36,13,0],
+      ["plant",38.5,26.5,0],["shelf",.5,22,1],["counter",8,27,0],["door",20,26.5,0],["t5",9,10.5,0],["t2",31,21.5,0],["t4",8,24.5,0],["t6",20,23,0]];
+  if(!P)P={W:40,H:28,items:[]};
   function say(t){note=t;info()}
-  function info(){var seats=0;P.items.forEach(function(i){seats+=DEF[i.k][5]});stat.textContent=note||(sel?DEF[sel.k][1]+" selected. ":"")+plural(P.items.length,"piece")+" · "+plural(seats,"seat")+" · "+P.W+" × "+P.H+" ft"+(P.eg?" · an example to start from":"")}
+  function info(){var seats=0;P.items.forEach(function(i){seats+=DEF[i.k][5]});stat.textContent=note||(sel?DEF[sel.k][1]+" selected. ":"")+plural(P.items.length,"piece")+" · "+plural(seats,"seat")+" · "+P.W+" × "+P.H+" ft"+(P.eg?" · a sample layout, not a real club":!P.items.length?" · pick a piece from Add, or load the sample project":"")}
   function B(par,label,fn){var b=el("button",null,label);b.type="button";b.onclick=function(){note="";fn()};par.appendChild(b);return b}
   function isT(it){return DEF[it.k][2]==="Room names"}
   function box(it){var d=DEF[it.k];return isT(it)?[it._w||6,it._h||1.5]:it.r%2?[d[4],d[3]]:[d[3],d[4]]}
@@ -1200,9 +1201,10 @@ function planApp(){if(once("plan","plan","Floor Plan","Lay out a room, one squar
   var clr=el("button",null,"Clear"),at=0;clr.type="button";sub.appendChild(clr);
   clr.onclick=function(){if(!clr.classList.contains("arm")){clr.classList.add("arm");clr.textContent="Really?";clr.setAttribute("aria-pressed","true");at=setTimeout(function(){clr.classList.remove("arm");clr.textContent="Clear";clr.setAttribute("aria-pressed","false")},3000);return}
     clearTimeout(at);clr.classList.remove("arm");clr.textContent="Clear";clr.setAttribute("aria-pressed","false");snap();P.items=[];sel=null;keep();say("An empty room.");paint()};
+  B(sub,"Load sample project",function(){snap();P.W=40;P.H=28;ws.value=40;hs.value=28;P.items=SAMPLE.map(function(a){return {k:a[0],x:a[1],y:a[2],r:a[3]}});sel=null;keep();P.eg=1;paint()});
   B(sub,"Save PNG",function(){var c=document.createElement("canvas");c.width=CW*2;c.height=CH*2;render(c.getContext("2d"),CW,CH,2,false);savePng(c,"less-made-floor-plan.png",say)});
   w.bd.appendChild(bar);w.bd.appendChild(sub);w.bd.appendChild(stage);w.bd.appendChild(stat);stage.appendChild(cv);
-  CW=Math.max(120,stage.clientWidth);CH=Math.max(120,stage.clientHeight);cv.width=Math.round(CW*DPR);cv.height=Math.round(CH*DPR);cv.style.width=CW+"px";cv.style.height=CH+"px";
+  function size(){CW=Math.max(120,stage.clientWidth);CH=Math.max(120,stage.clientHeight);cv.width=Math.round(CW*DPR);cv.height=Math.round(CH*DPR);cv.style.width=CW+"px";cv.style.height=CH+"px"}size();w.onsize=function(){size();paint()};
   cv.setAttribute("role","img");cv.setAttribute("aria-label","Floor plan. Add pieces from the Add menu, then drag them, or move the selected piece with the arrow keys.");
   function at2(e){var r=cv.getBoundingClientRect(),f=fit(CW,CH);return {x:(e.clientX-r.left-f.ox)/f.u,y:(e.clientY-r.top-f.oy)/f.u,u:f.u}}
   function hit(p){var l=order();for(var i=l.length-1;i>=0;i--){var it=l[i],b=box(it);if(Math.abs(p.x-it.x)<=Math.max(b[0]/2,8/p.u)&&Math.abs(p.y-it.y)<=Math.max(b[1]/2,8/p.u))return it}return null}
@@ -1273,6 +1275,8 @@ function loading(o,jobs,then,done0){var fill=o.querySelector(".pb i"),msg=o.quer
   show();if(!jobs.length){fin();return}for(var k=0;k<4;k++)next();setTimeout(fin,25000);o.addEventListener("click",function(e){if(e.detail>1)fin()})}
 function splash(kind,name,line,jobs,then){var o=el("div","spl"),b=el("div","sb"),ic=el("div","si"),bar=el("div","pb");ic.innerHTML=SVG[kind]||"";bar.appendChild(el("i"));o.setAttribute("role","status");
   b.appendChild(ic);b.appendChild(el("div","sn",name));b.appendChild(el("div","sg",line));b.appendChild(bar);b.appendChild(el("div","sm"));b.appendChild(el("div","sv","Less Made · Version 1.0"));o.appendChild(b);document.body.appendChild(o);loading(o,jobs,then)}
+/* what a program waits for before it opens: a pack on a slow line, three otherwise. Tiles ask for their own thumbnails as they come into view */
+function firstThumbs(){return allThumbs().slice(0,slow()?1:3)}
 function allThumbs(){return (D.packs||[]).filter(function(p){return p&&p.ids&&p.ids.length}).map(function(p){return function(){return packUrl(POF,p.ids[0])}})}
 function once(key,kind,name,line,jobs,go){if(SPL[key])return false;if(SPL[key]===0)return true;SPL[key]=0;splash(kind,name,line,jobs(),function(){SPL[key]=1;go()});return true}
 fetch("wall.json",{cache:"no-cache"}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(start).catch(function(){var b=document.getElementById("boot");if(b)b.remove();var w=el("div","off on");w.appendChild(el("div",null,"The disk could not be read. Reload the page to try again."));document.body.appendChild(w)});
