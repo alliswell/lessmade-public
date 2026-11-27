@@ -61,8 +61,10 @@ canvas,img{image-rendering:pixelated}
 .bc b{display:block;font-size:22px;line-height:1.05;font-weight:700}
 .bc small{display:block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-top:3px}
 .bc p{margin:6px 0 0;font-size:13px;line-height:1.2}
-.bc ul{list-style:none;margin:9px 0 0;padding:5px 0 0;border-top:2px solid var(--k)}
-.bc a{display:flex;align-items:center;gap:8px;color:var(--k);text-decoration:none;padding:3px 2px;cursor:pointer}
+.bc ul{list-style:none;margin:9px 0 0;padding:5px 0 0;border-top:2px solid var(--k);display:flex}
+.bc li{flex:1;min-width:0}
+.bc .bcs{font-size:12px;line-height:1.2;text-align:center;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bc a{display:flex;align-items:center;justify-content:center;color:var(--k);text-decoration:none;padding:7px 0;cursor:pointer}
 .bc a svg{width:30px;height:26px;flex:none;display:block}.bc a span{min-width:0;line-height:1.1}.bc a i{display:block;font-style:normal;font-size:12px;overflow:hidden;text-overflow:ellipsis}
 .bc a:hover,.bc a:focus-visible,.bc a:active{background:var(--k);color:var(--w);outline:0}.bc a:hover svg,.bc a:focus-visible svg,.bc a:active svg{filter:invert(1)}
 /* windows */
@@ -809,7 +811,7 @@ function fader(vert,min,max,val,name,fn){var e=el("div","fd"+(vert?" v":"")),k=e
 /* phones get no music player: no icon, no window, and the track list is never fetched. A phone is a narrow window, or a touch screen whose short side is narrow (so turning it sideways changes nothing) */
 var PHONE=innerWidth<=639||Math.min(innerWidth,innerHeight)<=639&&!!(window.matchMedia&&matchMedia("(pointer:coarse)").matches);
 /* ---- Business card: the links off the desk. Add a row to SOCIAL to add an account: [icon, name, handle shown, address] ---- */
-var SOCIAL=[["cam","Instagram","@alliswell","https://www.instagram.com/alliswell"],["x","X","@alliswell","https://x.com/alliswell"],["work","LinkedIn","jarederickson","https://www.linkedin.com/in/jarederickson"],["play","YouTube","@nothingatlast","https://www.youtube.com/@nothingatlast"]],CARD=null;
+var SOCIAL=[["cam","Instagram","@alliswell","https://www.instagram.com/alliswell"],["x","X","@alliswell","https://x.com/alliswell"],["work","LinkedIn","jarederickson","https://www.linkedin.com/in/jarederickson"],["play","YouTube","@nothingatlast","https://www.youtube.com/@nothingatlast"],["mail","Email","jared@lessmade.com","mailto:jared@lessmade.com"]],CARD=null;
 var SOC={cam:'<rect x="3" y="7" width="24" height="16" fill="#fff" stroke="#000" stroke-width="2"/><rect x="9" y="3" width="8" height="4" fill="#000"/><circle cx="15" cy="15" r="5" fill="#fff" stroke="#000" stroke-width="2"/>',
   work:'<rect x="3" y="8" width="24" height="15" fill="#fff" stroke="#000" stroke-width="2"/><path d="M10 8V4h10v4M3 15h24" fill="none" stroke="#000" stroke-width="2"/>',
   play:'<rect x="3" y="4" width="24" height="18" fill="#fff" stroke="#000" stroke-width="2"/><path d="M12 8v10l8-5z" fill="#000"/>',
@@ -818,8 +820,12 @@ var SOC={cam:'<rect x="3" y="7" width="24" height="16" fill="#fff" stroke="#000"
   link:'<rect x="3" y="4" width="24" height="18" fill="#fff" stroke="#000" stroke-width="2"/><path d="M9 13h12M16 8l5 5-5 5" fill="none" stroke="#000" stroke-width="2"/>'};
 function bizCard(d){if(!SOCIAL.length)return;var c=el("div","bc"),cb=el("button","bcx"),ab=d.about||{},nm=el("b","",String(ab.name||"Jared Erickson").replace(/\.$/,""));cb.type="button";cb.setAttribute("aria-label","Put the business card away");cb.onclick=function(){c.hidden=true};c.appendChild(cb);CARD=c;c.appendChild(nm);c.appendChild(el("small","","Less Made"));
   if(ab.lines&&ab.lines.length){var p=el("p");ab.lines.forEach(function(t,i){if(i)p.appendChild(document.createElement("br"));p.appendChild(document.createTextNode(t))});c.appendChild(p)}
-  var ul=el("ul");SOCIAL.forEach(function(x){var li=el("li"),a=el("a");a.href=x[3];a.target="_blank";a.rel="noopener";a.draggable=false;a.innerHTML='<svg viewBox="0 0 30 26" aria-hidden="true">'+(SOC[x[0]]||SOC.link)+"</svg>";
-    var sp=el("span","",x[1]);sp.appendChild(el("i","",x[2]));a.appendChild(sp);li.appendChild(a);ul.appendChild(li)});c.appendChild(ul);dk.appendChild(c);
+  /* one row of icons; the line under it names the one being pointed at, and otherwise shows the email address in full */
+  var ul=el("ul"),st=el("div","bcs"),ML="";SOCIAL.forEach(function(x){if(x[0]==="mail")ML=x[2]});function say(t){st.textContent=t||ML||"Tap an icon to open it"}
+  SOCIAL.forEach(function(x){var li=el("li"),a=el("a"),nm2=x[1]+" "+x[2],ml=x[0]==="mail";a.href=x[3];if(!ml){a.target="_blank";a.rel="noopener"}a.draggable=false;a.title=nm2;a.setAttribute("aria-label",nm2);a.innerHTML='<svg viewBox="0 0 30 26" aria-hidden="true">'+(SOC[x[0]]||SOC.link)+"</svg>";
+    a.onmouseenter=a.onfocus=function(){say(nm2)};a.onmouseleave=a.onblur=function(){say()};
+    if(ml)a.addEventListener("click",function(){try{navigator.clipboard.writeText(x[2]).then(function(){say("Copied "+x[2])},function(){})}catch(er){}});
+    li.appendChild(a);ul.appendChild(li)});say();c.appendChild(ul);c.appendChild(st);dk.appendChild(c);
   var pos=null;try{pos=JSON.parse(localStorage.getItem("lm-desk-card")||"null")}catch(e){}
   function put(){var W=desk.clientWidth,H=desk.clientHeight,x=pos?pos.x:12,y=pos?pos.y:H-c.offsetHeight-26;c.style.left=Math.max(4,Math.min(W-c.offsetWidth-4,x))+"px";c.style.top=Math.max(4,Math.min(H-c.offsetHeight-8,y))+"px"}
   put();addEventListener("resize",put);c._put=put;
