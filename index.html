@@ -55,6 +55,9 @@ canvas,img{image-rendering:pixelated}
 /* business card: lies on the desktop under the windows, drag it anywhere; each row is a link */
 .bc{position:absolute;width:214px;max-width:calc(100vw - 24px);background:var(--w);border:2px solid var(--k);box-shadow:4px 4px 0 var(--k);padding:12px 12px 8px;transform:rotate(-3deg);touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
 .bc.mv{cursor:grabbing;transform:rotate(-1deg);box-shadow:7px 7px 0 var(--k)}
+.bc{padding-top:26px}
+.bcx{position:absolute;left:8px;top:7px;width:15px;height:15px;padding:0;border:2px solid var(--k);background:var(--w);cursor:pointer}.bcx::after{content:"";position:absolute;inset:-9px}
+.bcx:active,.bcx:focus-visible{background:var(--k);outline:0}
 .bc b{display:block;font-size:22px;line-height:1.05;font-weight:700}
 .bc small{display:block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-top:3px}
 .bc p{margin:6px 0 0;font-size:13px;line-height:1.2}
@@ -806,21 +809,22 @@ function fader(vert,min,max,val,name,fn){var e=el("div","fd"+(vert?" v":"")),k=e
 /* phones get no music player: no icon, no window, and the track list is never fetched. A phone is a narrow window, or a touch screen whose short side is narrow (so turning it sideways changes nothing) */
 var PHONE=innerWidth<=639||Math.min(innerWidth,innerHeight)<=639&&!!(window.matchMedia&&matchMedia("(pointer:coarse)").matches);
 /* ---- Business card: the links off the desk. Add a row to SOCIAL to add an account: [icon, name, handle shown, address] ---- */
-var SOCIAL=[["cam","Instagram","@alliswell","https://www.instagram.com/alliswell"]];
+var SOCIAL=[["cam","Instagram","@alliswell","https://www.instagram.com/alliswell"],["x","X","@alliswell","https://x.com/alliswell"],["work","LinkedIn","jarederickson","https://www.linkedin.com/in/jarederickson"],["play","YouTube","@nothingatlast","https://www.youtube.com/@nothingatlast"]],CARD=null;
 var SOC={cam:'<rect x="3" y="7" width="24" height="16" fill="#fff" stroke="#000" stroke-width="2"/><rect x="9" y="3" width="8" height="4" fill="#000"/><circle cx="15" cy="15" r="5" fill="#fff" stroke="#000" stroke-width="2"/>',
   work:'<rect x="3" y="8" width="24" height="15" fill="#fff" stroke="#000" stroke-width="2"/><path d="M10 8V4h10v4M3 15h24" fill="none" stroke="#000" stroke-width="2"/>',
   play:'<rect x="3" y="4" width="24" height="18" fill="#fff" stroke="#000" stroke-width="2"/><path d="M12 8v10l8-5z" fill="#000"/>',
   mail:'<rect x="3" y="5" width="24" height="17" fill="#fff" stroke="#000" stroke-width="2"/><path d="M3 5l12 9 12-9" fill="none" stroke="#000" stroke-width="2"/>',
+  x:'<rect x="3" y="3" width="24" height="20" fill="#fff" stroke="#000" stroke-width="2"/><path d="M9 7l12 12M21 7L9 19" fill="none" stroke="#000" stroke-width="3"/>',
   link:'<rect x="3" y="4" width="24" height="18" fill="#fff" stroke="#000" stroke-width="2"/><path d="M9 13h12M16 8l5 5-5 5" fill="none" stroke="#000" stroke-width="2"/>'};
-function bizCard(d){if(!SOCIAL.length)return;var c=el("div","bc"),ab=d.about||{},nm=el("b","",String(ab.name||"Jared Erickson").replace(/\.$/,""));c.appendChild(nm);c.appendChild(el("small","","Less Made"));
+function bizCard(d){if(!SOCIAL.length)return;var c=el("div","bc"),cb=el("button","bcx"),ab=d.about||{},nm=el("b","",String(ab.name||"Jared Erickson").replace(/\.$/,""));cb.type="button";cb.setAttribute("aria-label","Put the business card away");cb.onclick=function(){c.hidden=true};c.appendChild(cb);CARD=c;c.appendChild(nm);c.appendChild(el("small","","Less Made"));
   if(ab.lines&&ab.lines.length){var p=el("p");ab.lines.forEach(function(t,i){if(i)p.appendChild(document.createElement("br"));p.appendChild(document.createTextNode(t))});c.appendChild(p)}
   var ul=el("ul");SOCIAL.forEach(function(x){var li=el("li"),a=el("a");a.href=x[3];a.target="_blank";a.rel="noopener";a.draggable=false;a.innerHTML='<svg viewBox="0 0 30 26" aria-hidden="true">'+(SOC[x[0]]||SOC.link)+"</svg>";
     var sp=el("span","",x[1]);sp.appendChild(el("i","",x[2]));a.appendChild(sp);li.appendChild(a);ul.appendChild(li)});c.appendChild(ul);dk.appendChild(c);
   var pos=null;try{pos=JSON.parse(localStorage.getItem("lm-desk-card")||"null")}catch(e){}
   function put(){var W=desk.clientWidth,H=desk.clientHeight,x=pos?pos.x:12,y=pos?pos.y:H-c.offsetHeight-26;c.style.left=Math.max(4,Math.min(W-c.offsetWidth-4,x))+"px";c.style.top=Math.max(4,Math.min(H-c.offsetHeight-8,y))+"px"}
-  put();addEventListener("resize",put);
+  put();addEventListener("resize",put);c._put=put;
   /* drag from anywhere on the card; a press that barely moves is left alone so the links still open */
-  var g=null;c.addEventListener("pointerdown",function(e){if(e.button)return;g={id:e.pointerId,x:e.clientX,y:e.clientY,l:c.offsetLeft,t:c.offsetTop,on:false}});
+  var g=null;c.addEventListener("pointerdown",function(e){if(e.button||e.target===cb)return;g={id:e.pointerId,x:e.clientX,y:e.clientY,l:c.offsetLeft,t:c.offsetTop,on:false}});
   c.addEventListener("pointermove",function(e){if(!g||e.pointerId!==g.id)return;var dx=e.clientX-g.x,dy=e.clientY-g.y;if(!g.on){if(Math.abs(dx)+Math.abs(dy)<6)return;g.on=true;c.classList.add("mv");try{c.setPointerCapture(g.id)}catch(er){}}
     pos={x:g.l+dx,y:g.t+dy};put()});
   function up(e){if(!g||e.pointerId!==g.id)return;var was=g.on;g=null;c.classList.remove("mv");if(was){pos={x:c.offsetLeft,y:c.offsetTop};try{localStorage.setItem("lm-desk-card",JSON.stringify(pos))}catch(er){}}}
@@ -1252,7 +1256,7 @@ function planApp(){if(once("plan","plan","Floor Plan","Lay out a room, one squar
   paint();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){if(wins.indexOf(w)>-1)paint()})}
 
 /* ---- menus ---- */
-var MENUS={mk:[["About this desk…",aboutDesk]],
+var MENUS={mk:[["About this desk…",aboutDesk],["Business card",function(){if(!CARD)return;CARD.hidden=!CARD.hidden;if(!CARD.hidden)CARD._put()},function(){return !!CARD&&!CARD.hidden}]],
  file:[["New note",function(){ntNew()}],null,["Open",function(){var s=document.querySelector(".win.act .sel, .dk>.ic.sel");if(s&&s._open)s._open()}],["Get Info",getInfo],["Close window",function(){closeWin(act)}],["Close all",function(){wins.slice().forEach(closeWin)}],null,["Loose Wall: Orbit ↗",WALL+"#orbit"],["Loose Wall: Wall ↗",WALL+"#wall"],["Loose Wall: Scroll ↗",WALL+"#scroll"],["Loose Wall: About ↗",WALL+"#about"]],
  view:[["by Icon",function(){OPT.list=false;save();refill()},function(){return !OPT.list}],["by Name",function(){OPT.list=true;save();refill()},function(){return OPT.list}]],
  spec:[["Show hidden items",function(){OPT.hidden=!OPT.hidden;save();refill()},function(){return OPT.hidden}],["Colour pictures",function(){OPT.colour=!OPT.colour;save();PEND={};refill()},function(){return OPT.colour}],
