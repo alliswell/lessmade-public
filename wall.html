@@ -1693,6 +1693,7 @@ function edAbout(){var p=ED.ui.a,A=abCur();if(document.activeElement&&p.contains
 document.getElementById("edbtn").onclick=edOpen;
 
 fetch("wall.json",{cache:"no-cache"}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(d){
+  d.items=(d.items||[]).filter(function(x){return !x.x});   /* wall.json "x": in the Desk's Trash, shown only there */
   if(d.about){ABOUT0=abNorm(d.about);abApply()}if(d.opts){OPTJSON=d.opts;optCompute()}(d.items||[]).forEach(function(x){if(x.b)BLR[x.id]=x.b});
   PACKS=(d.packs||[]).map(function(p){return typeof p==="string"?null:p}).filter(Boolean);PACKS.forEach(function(p,k){p.ids.forEach(function(id){PKOF[id]=k})});
   (d.full||[]).forEach(function(p){var o=0;p.ids.forEach(function(id,j){FOF[id]={p:p,o:o,n:p.len[j]};o+=p.len[j]})});
