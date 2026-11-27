@@ -52,6 +52,16 @@ canvas,img{image-rendering:pixelated}
 .ic.pic .g{position:relative}
 .dk{position:absolute;inset:0}.dk>.ic{position:absolute;right:max(10px,env(safe-area-inset-right,0px))}
 .dk>.ic .t{box-shadow:0 0 0 1px var(--w)}
+/* business card: lies on the desktop under the windows, drag it anywhere; each row is a link */
+.bc{position:absolute;width:214px;max-width:calc(100vw - 24px);background:var(--w);border:2px solid var(--k);box-shadow:4px 4px 0 var(--k);padding:12px 12px 8px;transform:rotate(-3deg);touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.bc.mv{cursor:grabbing;transform:rotate(-1deg);box-shadow:7px 7px 0 var(--k)}
+.bc b{display:block;font-size:22px;line-height:1.05;font-weight:700}
+.bc small{display:block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-top:3px}
+.bc p{margin:6px 0 0;font-size:13px;line-height:1.2}
+.bc ul{list-style:none;margin:9px 0 0;padding:5px 0 0;border-top:2px solid var(--k)}
+.bc a{display:flex;align-items:center;gap:8px;color:var(--k);text-decoration:none;padding:3px 2px;cursor:pointer}
+.bc a svg{width:30px;height:26px;flex:none;display:block}.bc a span{min-width:0;line-height:1.1}.bc a i{display:block;font-style:normal;font-size:12px;overflow:hidden;text-overflow:ellipsis}
+.bc a:hover,.bc a:focus-visible,.bc a:active{background:var(--k);color:var(--w);outline:0}.bc a:hover svg,.bc a:focus-visible svg,.bc a:active svg{filter:invert(1)}
 /* windows */
 .win{position:absolute;display:flex;flex-direction:column;background:var(--w);border:2px solid var(--k);box-shadow:3px 3px 0 var(--k);min-width:200px;min-height:120px;max-width:100vw}
 .tb{flex:none;height:24px;display:flex;align-items:center;gap:6px;padding:0 4px;border-bottom:2px solid var(--k);cursor:grab;touch-action:none}
@@ -795,6 +805,29 @@ function fader(vert,min,max,val,name,fn){var e=el("div","fd"+(vert?" v":"")),k=e
   put(val,true);e.set=function(v){put(v,true)};return e}
 /* phones get no music player: no icon, no window, and the track list is never fetched. A phone is a narrow window, or a touch screen whose short side is narrow (so turning it sideways changes nothing) */
 var PHONE=innerWidth<=639||Math.min(innerWidth,innerHeight)<=639&&!!(window.matchMedia&&matchMedia("(pointer:coarse)").matches);
+/* ---- Business card: the links off the desk. Add a row to SOCIAL to add an account: [icon, name, handle shown, address] ---- */
+var SOCIAL=[["cam","Instagram","@alliswell","https://www.instagram.com/alliswell"]];
+var SOC={cam:'<rect x="3" y="7" width="24" height="16" fill="#fff" stroke="#000" stroke-width="2"/><rect x="9" y="3" width="8" height="4" fill="#000"/><circle cx="15" cy="15" r="5" fill="#fff" stroke="#000" stroke-width="2"/>',
+  work:'<rect x="3" y="8" width="24" height="15" fill="#fff" stroke="#000" stroke-width="2"/><path d="M10 8V4h10v4M3 15h24" fill="none" stroke="#000" stroke-width="2"/>',
+  play:'<rect x="3" y="4" width="24" height="18" fill="#fff" stroke="#000" stroke-width="2"/><path d="M12 8v10l8-5z" fill="#000"/>',
+  mail:'<rect x="3" y="5" width="24" height="17" fill="#fff" stroke="#000" stroke-width="2"/><path d="M3 5l12 9 12-9" fill="none" stroke="#000" stroke-width="2"/>',
+  link:'<rect x="3" y="4" width="24" height="18" fill="#fff" stroke="#000" stroke-width="2"/><path d="M9 13h12M16 8l5 5-5 5" fill="none" stroke="#000" stroke-width="2"/>'};
+function bizCard(d){if(!SOCIAL.length)return;var c=el("div","bc"),ab=d.about||{},nm=el("b","",String(ab.name||"Jared Erickson").replace(/\.$/,""));c.appendChild(nm);c.appendChild(el("small","","Less Made"));
+  if(ab.lines&&ab.lines.length){var p=el("p");ab.lines.forEach(function(t,i){if(i)p.appendChild(document.createElement("br"));p.appendChild(document.createTextNode(t))});c.appendChild(p)}
+  var ul=el("ul");SOCIAL.forEach(function(x){var li=el("li"),a=el("a");a.href=x[3];a.target="_blank";a.rel="noopener";a.draggable=false;a.innerHTML='<svg viewBox="0 0 30 26" aria-hidden="true">'+(SOC[x[0]]||SOC.link)+"</svg>";
+    var sp=el("span","",x[1]);sp.appendChild(el("i","",x[2]));a.appendChild(sp);li.appendChild(a);ul.appendChild(li)});c.appendChild(ul);dk.appendChild(c);
+  var pos=null;try{pos=JSON.parse(localStorage.getItem("lm-desk-card")||"null")}catch(e){}
+  function put(){var W=desk.clientWidth,H=desk.clientHeight,x=pos?pos.x:12,y=pos?pos.y:H-c.offsetHeight-26;c.style.left=Math.max(4,Math.min(W-c.offsetWidth-4,x))+"px";c.style.top=Math.max(4,Math.min(H-c.offsetHeight-8,y))+"px"}
+  put();addEventListener("resize",put);
+  /* drag from anywhere on the card; a press that barely moves is left alone so the links still open */
+  var g=null;c.addEventListener("pointerdown",function(e){if(e.button)return;g={id:e.pointerId,x:e.clientX,y:e.clientY,l:c.offsetLeft,t:c.offsetTop,on:false}});
+  c.addEventListener("pointermove",function(e){if(!g||e.pointerId!==g.id)return;var dx=e.clientX-g.x,dy=e.clientY-g.y;if(!g.on){if(Math.abs(dx)+Math.abs(dy)<6)return;g.on=true;c.classList.add("mv");try{c.setPointerCapture(g.id)}catch(er){}}
+    pos={x:g.l+dx,y:g.t+dy};put()});
+  function up(e){if(!g||e.pointerId!==g.id)return;var was=g.on;g=null;c.classList.remove("mv");if(was){pos={x:c.offsetLeft,y:c.offsetTop};try{localStorage.setItem("lm-desk-card",JSON.stringify(pos))}catch(er){}}}
+  c.addEventListener("pointerup",up);c.addEventListener("pointercancel",up);
+  /* a drag that ends over a link must not open it */
+  c.addEventListener("click",function(e){if(c._drag){e.preventDefault();e.stopPropagation()}},true);
+  c.addEventListener("pointerup",function(){c._drag=c.classList.contains("mv")},true);c.addEventListener("pointerdown",function(){c._drag=false},true)}
 function music(auto){if(PHONE)return;var vw=innerWidth,vh=innerHeight-barH();var w=win("music","Music",{w:324,h:524,auto:true,fixed:true,nost:true,exact:true,x:Math.max(4,vw-324-130),y:Math.max(6,vh-552)});if(!w)return;
   var box=el("div","mu"),now=el("div","now"),ti=el("b",null,"Reading the tape…"),tm=el("span"),cv=el("canvas"),ctl=el("div","ctl"),pv=el("button",null,"◀◀"),pp=el("button",null,"Play"),nx=el("button",null,"▶▶"),ol=el("ol","tl");
   var a=new Audio(),cur=-1,raf=0,x=cv.getContext("2d"),wait=false,AC=null,gn=null,flt=[],fk=1,FREQ=[60,250,1000,4000,12000],FNAME=["60","250","1k","4k","12k"];a.preload="none";
@@ -1259,7 +1292,7 @@ function start(d){D=d;ED.all=d.items.slice();ED.all.forEach(function(it){BY[it.i
   var ics=[["disk","Less Made",function(){folder({t:"root"})}],["viewer","Viewer",function(){viewer()}],["orbit","Project Orbit",orbit],["wall","Project Wall",wallApp],["film","Media Player",media]].concat(PHONE?[]:[["music","Music",function(){music()}]]).concat([["note","Notes",function(){if(!ntShow())ntNew()}],["doc","About Jared",about],["game","Fast or Last",rideApp],["plan","Floor Plan",planApp],["edit","Editor",editor]]).map(function(x){var b=icon(x[0],x[1],{open:x[2]});b._k={kind:x[0],label:x[1],info:x[0]==="disk"?plural(d.items.length,"picture"):x[0]==="doc"?"Document":"Program"};dk.appendChild(b);if(x[0]==="note")NT.icon=b;if(x[0]==="edit"){ED.icon=b;b.hidden=true}return b});
   /* icons run down the right edge and start a second column when the screen is short */
   function place(){var room=desk.clientHeight-104,y=10,col=0;ics.forEach(function(b){if(b.hidden)return;if(y+88>room&&y>10){col++;y=10}b.style.top=y+"px";b.style.right="calc(max(10px,env(safe-area-inset-right,0px)) + "+col*116+"px)";y+=92})}
-  place();addEventListener("resize",place);ED.place=place;
+  place();addEventListener("resize",place);ED.place=place;bizCard(d);
   var t=icon("trash","Trash",{open:trash});t.style.bottom="calc(14px + env(safe-area-inset-bottom,0px))";dk.appendChild(t);TRI=t;trashMark();
   wire(dk);pat();idle();
   /* the desk's own loading screen: the type, the track list and the first pictures, then the notes and the music open and nothing else */
