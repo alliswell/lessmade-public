@@ -485,12 +485,12 @@ function fcOpen(it,q){var F={it:it,q:q,k:0,im:null,dc:null,dk:"",v:null,out:fals
   if(it.v){var v=F.v=document.createElement("video");v.muted=true;v.loop=true;v.playsInline=true;v.setAttribute("playsinline","");v.setAttribute("muted","");v.src=it.v;
     if(it.vs&&it.vs!==it.v)v.addEventListener("error",function(){if(v.error&&v.error.code!==1&&!F.alt&&F.v){F.alt=1;v.src=it.vs;v.play().catch(function(){})}});v.play().catch(function(){})}
   else full(it.id).then(function(im){F.im=im;F.dk=""},function(){});return F}
-/* a sideways drag on the open picture: 1 or -1 steps to the next or the one before, 2 means it moved but not far enough, 0 means it was a tap */
-function fcSwipe(F,from,p,ok){var dx=p[0]-from[0],dy=p[1]-from[1];F.dx=0;if(Math.abs(dx)<8&&Math.abs(dy)<8)return 0;return ok&&Math.abs(dx)>=36&&Math.abs(dx)>Math.abs(dy)?(dx<0?1:-1):2}
+/* a drag on the open picture: sideways gives 1 or -1 (the next or the one before), downwards gives 3 (put it back), 2 means it moved but not far enough, 0 means it was a tap */
+function fcSwipe(F,from,p,ok){var dx=p[0]-from[0],dy=p[1]-from[1];F.dx=F.dy=0;if(Math.abs(dx)<8&&Math.abs(dy)<8)return 0;if(ok&&dy>=48&&dy>Math.abs(dx))return 3;return ok&&Math.abs(dx)>=36&&Math.abs(dx)>Math.abs(dy)?(dx<0?1:-1):2}
 function fcEnd(F){if(F&&F.v){var v=F.v;F.v=null;v.pause();v.removeAttribute("src");v.load()}}
 /* grows from the rectangle it was clicked in to fill the canvas; returns how far along it is (0 to 1) */
 function fcDraw(x,cw,ch,F){F.k+=((F.out?0:1)-F.k)*(CALM?1:.24);var it=F.it,k=F.k,m=Math.min((cw-28)/it.w,(ch-72)/it.h),tw=it.w*m,th=it.h*m,q=F.q;
-  var L=Math.round(q[0]+((cw-tw)/2-q[0])*k+(F.dx||0)*k),T=Math.round(q[1]+((ch-36-th)/2-q[1])*k),W=Math.max(2,Math.round(q[2]+(tw-q[2])*k)),H=Math.max(2,Math.round(q[3]+(th-q[3])*k));
+  var L=Math.round(q[0]+((cw-tw)/2-q[0])*k+((F.dy||0)>Math.abs(F.dx||0)?0:F.dx||0)*k),T=Math.round(q[1]+((ch-36-th)/2-q[1])*k+(Math.abs(F.dx||0)>(F.dy||0)?0:F.dy||0)*k),W=Math.max(2,Math.round(q[2]+(tw-q[2])*k)),H=Math.max(2,Math.round(q[3]+(th-q[3])*k));
   if(k>.25){if(!VEIL){VEIL=document.createElement("canvas");VEIL.width=VEIL.height=2;var g=VEIL.getContext("2d");g.fillStyle="#000";g.fillRect(0,0,2,2);g.fillStyle="#fff";g.fillRect(1,1,1,1)}x.fillStyle=x.createPattern(VEIL,"repeat");x.fillRect(0,0,cw,ch)}
   var vid=F.v&&F.v.readyState>=2,clear=it.a&&OPT.colour;if(!clear){x.fillStyle="#000";x.fillRect(L,T,W,H)}
   if(vid||F.im){if(OPT.colour){x.imageSmoothingEnabled=true;x.drawImage(vid?F.v:F.im,L,T,W,H);x.imageSmoothingEnabled=false}
@@ -575,13 +575,13 @@ function orbit(){if(OB&&wins.indexOf(OB)>-1){front(OB);return}
     var best=null,bd=1e9;sys.forEach(function(S){var d=Math.hypot(S.sx-p[0],S.sy-p[1]);if(d<S.R*cam.z+14&&d<bd){bd=d;best=S}});if(best)fly(best)}
   cv.addEventListener("pointerdown",function(e){var p=at(e);PT[e.pointerId]=p;var ids=Object.keys(PT);try{cv.setPointerCapture(e.pointerId)}catch(_){}
     if(ids.length===2){var a=PT[ids[0]],b=PT[ids[1]];pin={d:Math.hypot(a[0]-b[0],a[1]-b[1])||1,z:cam.z};moved=true}else{drag=p;moved=false;vx=vy=ax=ay=0}});
-  cv.addEventListener("pointermove",function(e){var p=at(e);if(e.pointerType==="mouse")mouse=p;if(!PT[e.pointerId])return;if(F){if(drag&&!pin)F.dx=p[0]-drag[0];return}var ids=Object.keys(PT);
+  cv.addEventListener("pointermove",function(e){var p=at(e);if(e.pointerType==="mouse")mouse=p;if(!PT[e.pointerId])return;if(F){if(drag&&!pin){F.dx=p[0]-drag[0];F.dy=Math.max(0,p[1]-drag[1])}return}var ids=Object.keys(PT);
     if(pin&&ids.length>=2){PT[e.pointerId]=p;var a=PT[ids[0]],b=PT[ids[1]];zoomAt(pin.z*Math.hypot(a[0]-b[0],a[1]-b[1])/pin.d/cam.z,(a[0]+b[0])/2,(a[1]+b[1])/2);return}
     if(drag){var dx=p[0]-drag[0],dy=p[1]-drag[1];if(!moved&&Math.abs(dx)+Math.abs(dy)<4)return;moved=true;to=null;cam.x-=dx/cam.z;cam.y-=dy/cam.z;ax+=dx;ay+=dy;
       /* dragging across a system also spins it, like a wheel pushed at the rim */
       if(!CALM)sys.forEach(function(S){var rx=p[0]-S.sx,ry=p[1]-S.sy,d2=rx*rx+ry*ry,RR=S.R*cam.z;if(RR>70&&d2<RR*RR)S.w=Math.max(-2.6,Math.min(2.6,S.w+(rx*dy-ry*dx)/(d2+1200)*1.1))});
       drag=p;PT[e.pointerId]=p}});
-  function up(e){if(!PT[e.pointerId])return;var p=at(e);delete PT[e.pointerId];var n=Object.keys(PT).length;if(n<2)pin=null;if(!n&&F&&drag){var sw=fcSwipe(F,drag,p,e.type==="pointerup");if(sw){drag=null;if(sw!==2){w.step(sw);if(F)F.q[0]+=sw*cw*.5}return}}if(!n){if(!moved&&e.type==="pointerup"){if(e.pointerType!=="mouse"){mouse=p;setTimeout(function(){mouse=null},900)}click(p)}drag=null}}
+  function up(e){if(!PT[e.pointerId])return;var p=at(e);delete PT[e.pointerId];var n=Object.keys(PT).length;if(n<2)pin=null;if(!n&&F&&drag){var sw=fcSwipe(F,drag,p,e.type==="pointerup");if(sw){drag=null;if(sw===3)F.out=true;else if(sw!==2){w.step(sw);if(F)F.q[0]+=sw*cw*.5}return}}if(!n){if(!moved&&e.type==="pointerup"){if(e.pointerType!=="mouse"){mouse=p;setTimeout(function(){mouse=null},900)}click(p)}drag=null}}
   cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up);cv.addEventListener("pointerleave",function(){mouse=null});
   cv.addEventListener("wheel",function(e){e.preventDefault();idle();if(F)return;var p=at(e);zoomAt(Math.exp(-e.deltaY*(e.ctrlKey?.012:.0025)),p[0],p[1])},{passive:false});
   zi.onclick=function(){if(!F)zoomAt(1.7,cw/2,ch/2)};zo.onclick=function(){if(F)F.out=true;else zoomAt(1/1.7,cw/2,ch/2)};hm.onclick=function(){if(F)F.out=true;to={x:home.x,y:home.y,z:home.z}};
@@ -638,10 +638,10 @@ function wallApp(){if(once("wall","wall","Project Wall","Every picture on one en
   function click(p){if(F){F.out=true;return}var h=hit(p);if(h){vx=vy=0;F=fcOpen(h[0].it,h[1]);F.T=h[0]}}
   cv.addEventListener("pointerdown",function(e){var p=at(e);PT[e.pointerId]=p;var ids=Object.keys(PT);try{cv.setPointerCapture(e.pointerId)}catch(_){}vx=vy=0;
     if(ids.length===2){var a=PT[ids[0]],b=PT[ids[1]];pin={d:Math.hypot(a[0]-b[0],a[1]-b[1])||1,z:cam.z};moved=true}else{drag=p;moved=false}});
-  cv.addEventListener("pointermove",function(e){var p=at(e);if(e.pointerType==="mouse")mouse=p;if(!PT[e.pointerId])return;if(F){if(drag&&!pin)F.dx=p[0]-drag[0];return}var ids=Object.keys(PT);
+  cv.addEventListener("pointermove",function(e){var p=at(e);if(e.pointerType==="mouse")mouse=p;if(!PT[e.pointerId])return;if(F){if(drag&&!pin){F.dx=p[0]-drag[0];F.dy=Math.max(0,p[1]-drag[1])}return}var ids=Object.keys(PT);
     if(pin&&ids.length>=2){PT[e.pointerId]=p;var a=PT[ids[0]],b=PT[ids[1]];zoomAt(pin.z*Math.hypot(a[0]-b[0],a[1]-b[1])/pin.d/cam.z,(a[0]+b[0])/2,(a[1]+b[1])/2);return}
     if(drag){var dx=p[0]-drag[0],dy=p[1]-drag[1];if(!moved&&Math.abs(dx)+Math.abs(dy)<4)return;moved=true;cam.x-=dx/cam.z;cam.y-=dy/cam.z;vx=vx*.5-dx/cam.z*.5;vy=vy*.5-dy/cam.z*.5;drag=p;PT[e.pointerId]=p}});
-  function up(e){if(!PT[e.pointerId])return;var p=at(e);delete PT[e.pointerId];var n=Object.keys(PT).length;if(n<2)pin=null;if(!n&&F&&drag){var sw=fcSwipe(F,drag,p,e.type==="pointerup");if(sw){drag=null;if(sw!==2){w.step(sw);if(F)F.q[0]+=sw*cw*.5}return}}if(!n){if(!moved&&e.type==="pointerup")click(p);else if(CALM||pin)vx=vy=0;drag=null}}
+  function up(e){if(!PT[e.pointerId])return;var p=at(e);delete PT[e.pointerId];var n=Object.keys(PT).length;if(n<2)pin=null;if(!n&&F&&drag){var sw=fcSwipe(F,drag,p,e.type==="pointerup");if(sw){drag=null;if(sw===3)F.out=true;else if(sw!==2){w.step(sw);if(F)F.q[0]+=sw*cw*.5}return}}if(!n){if(!moved&&e.type==="pointerup")click(p);else if(CALM||pin)vx=vy=0;drag=null}}
   cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up);cv.addEventListener("pointerleave",function(){mouse=null});
   cv.addEventListener("wheel",function(e){e.preventDefault();idle();if(F)return;var p=at(e);if(e.ctrlKey||e.metaKey)zoomAt(Math.exp(-e.deltaY*.012),p[0],p[1]);else{vx=vy=0;cam.x+=e.deltaX/cam.z;cam.y+=e.deltaY/cam.z}},{passive:false});
   zi.onclick=function(){if(!F)zoomAt(1.5,cw/2,ch/2)};zo.onclick=function(){if(F)F.out=true;else zoomAt(1/1.5,cw/2,ch/2)};
